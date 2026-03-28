@@ -22,7 +22,7 @@ export default function InstallmentsPage({ finance }: { finance: FinanceStore })
     finance.categories.find((category) => category.id === categoryId)?.name ?? "Sem categoria";
 
   return (
-    <div className="grid gap-6 xl:grid-cols-2">
+    <div className="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
       <Panel eyebrow="Nova compra parcelada" title="Controle cada parcela sem perder o fio">
         <div className="grid gap-3">
           <p className="text-sm leading-6 text-slate-600">
@@ -138,33 +138,33 @@ export default function InstallmentsPage({ finance }: { finance: FinanceStore })
               return (
                 <div
                   key={plan.id}
-                  className="rounded-2xl border border-slate-200 bg-slate-50 p-4"
+                  className="rounded-[24px] border border-slate-200 bg-slate-50 p-4"
                 >
-                  <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_auto] xl:items-start">
-                    <div className="min-w-0 flex-1">
-                      <p className="max-w-[32ch] text-lg font-medium leading-7 text-slate-900 [overflow-wrap:anywhere]">
+                  <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-start">
+                    <div className="min-w-0">
+                      <p className="text-base font-medium leading-6 text-slate-900 [overflow-wrap:anywhere]">
                         {plan.title}
                       </p>
                       <p className="mt-1 text-sm leading-6 text-slate-500">
                         {categoryName(plan.categoryId)} - {accountName(plan.accountId)} - vence dia {plan.dueDay}
                       </p>
                     </div>
-                    <div className="xl:text-right">
-                      <p className="text-lg font-medium text-slate-900">
+                    <div className="flex flex-wrap gap-2 lg:justify-end">
+                      <span className="rounded-full bg-white px-3 py-2 text-sm font-semibold text-slate-900">
                         {nextInstallment}/{plan.totalInstallments}
-                      </p>
-                      <p className="text-sm leading-6 text-slate-500">
-                        {formatCurrency(plan.installmentAmount)} por parcela
-                      </p>
-                      <p className="text-sm leading-6 text-slate-500">
-                        Via {paymentMethodLabels[plan.paymentMethod]}
-                      </p>
+                      </span>
+                      <span className="rounded-full bg-white px-3 py-2 text-sm text-slate-600">
+                        {formatCurrency(plan.installmentAmount)}
+                      </span>
+                      <span className="rounded-full bg-white px-3 py-2 text-sm text-slate-600">
+                        {paymentMethodLabels[plan.paymentMethod]}
+                      </span>
                     </div>
                   </div>
                   <div className="mt-4 h-2 rounded-full bg-slate-200">
                     <div className="h-2 rounded-full bg-amber-300" style={{ width: `${progress}%` }} />
                   </div>
-                  <div className="mt-4 grid gap-3 xl:grid-cols-[minmax(0,1fr)_auto] xl:items-center">
+                  <div className="mt-4 grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
                     <p className="text-sm leading-6 text-slate-500">
                       {finished
                         ? "Todas as parcelas foram pagas."

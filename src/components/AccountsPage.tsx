@@ -14,41 +14,7 @@ export default function AccountsPage({ finance }: { finance: FinanceStore }) {
 
   return (
     <div className="space-y-6">
-      <div className="grid gap-6 xl:grid-cols-2">
-        <Panel eyebrow="Novo banco" title="Adicione os bancos que voce quer acompanhar">
-          <div className="grid gap-3">
-            <TextInput
-              value={accountForm.name}
-              placeholder="Ex.: Inter, Nubank, Itau"
-              maxLength={32}
-              onInput={(name) => setAccountForm((prev) => ({ ...prev, name }))}
-            />
-            <TextInput
-              value={accountForm.initialBalance}
-              placeholder="Saldo inicial"
-              type="number"
-              onInput={(initialBalance) =>
-                setAccountForm((prev) => ({ ...prev, initialBalance }))
-              }
-            />
-            <button
-              onClick={() => {
-                finance.addAccount({
-                  name: accountForm.name,
-                  type: "account",
-                  initialBalance: Number(accountForm.initialBalance || 0)
-                });
-                setAccountForm({ name: "", initialBalance: "" });
-              }}
-              className="rounded-2xl bg-slate-900 px-5 py-3 font-medium text-white transition hover:bg-slate-800"
-            >
-              Adicionar banco
-            </button>
-          </div>
-        </Panel>
-      </div>
-
-      <div className="grid gap-6 xl:grid-cols-2">
+      <div className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
         <Panel eyebrow="Bancos" title="Saldo atual por banco">
           <div className="space-y-3">
             {finance.accounts.length === 0 ? (
@@ -65,36 +31,38 @@ export default function AccountsPage({ finance }: { finance: FinanceStore }) {
                 return (
                   <details
                     key={account.id}
-                    className="rounded-2xl border border-slate-200 bg-slate-50 p-4"
+                    className="rounded-[24px] border border-slate-200 bg-slate-50 p-4"
                   >
-                    <summary className="grid cursor-pointer list-none gap-4 lg:grid-cols-[minmax(0,1fr)_auto_auto] lg:items-center">
+                    <summary className="grid cursor-pointer list-none gap-3 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
                       <div className="min-w-0">
-                        <p className="max-w-[32ch] text-lg font-medium text-slate-900 [overflow-wrap:anywhere]">
+                        <p className="text-lg font-medium text-slate-900 [overflow-wrap:anywhere]">
                           {account.name}
                         </p>
                         <p className="text-sm text-slate-500">Clique para ver detalhes</p>
                       </div>
-                      <p className="text-lg font-semibold text-emerald-600 lg:text-right">
-                        {formatCurrency(account.balance)}
-                      </p>
-                      <button
-                        onClick={(event) => {
-                          event.preventDefault();
-                          finance.removeAccount(account.id);
-                        }}
-                        className="w-full rounded-full border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-medium text-rose-700 lg:w-auto"
-                      >
-                        Excluir
-                      </button>
+                      <div className="flex flex-wrap items-center gap-2 md:justify-end">
+                        <p className="rounded-full bg-white px-3 py-2 text-sm font-semibold text-emerald-600">
+                          {formatCurrency(account.balance)}
+                        </p>
+                        <button
+                          onClick={(event) => {
+                            event.preventDefault();
+                            finance.removeAccount(account.id);
+                          }}
+                          className="rounded-full border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-medium text-rose-700"
+                        >
+                          Excluir
+                        </button>
+                      </div>
                     </summary>
                     <div className="mt-4 space-y-3 border-t border-slate-200 pt-4">
-                      <div className="flex items-center justify-between text-sm">
+                      <div className="flex items-center justify-between gap-3 text-sm">
                         <span className="text-slate-500">Saldo da conta</span>
                         <span className="font-medium text-slate-900">
                           {formatCurrency(account.balance)}
                         </span>
                       </div>
-                      <div className="flex items-center justify-between text-sm">
+                      <div className="flex items-center justify-between gap-3 text-sm">
                         <span className="text-slate-500">Guardado vinculado</span>
                         <span className="font-medium text-slate-900">
                           {formatCurrency(savedAmount)}
@@ -127,6 +95,45 @@ export default function AccountsPage({ finance }: { finance: FinanceStore }) {
           </div>
         </Panel>
 
+        <Panel eyebrow="Novo banco" title="Adicione os bancos que voce quer acompanhar">
+          <div className="grid gap-3">
+            <p className="text-sm leading-6 text-slate-600">
+              Crie os bancos em uma faixa compacta: nome, saldo inicial e acao no mesmo bloco.
+            </p>
+            <TextInput
+              value={accountForm.name}
+              placeholder="Ex.: Inter, Nubank, Itau"
+              maxLength={32}
+              onInput={(name) => setAccountForm((prev) => ({ ...prev, name }))}
+            />
+            <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_180px]">
+              <TextInput
+                value={accountForm.initialBalance}
+                placeholder="Saldo inicial"
+                type="number"
+                onInput={(initialBalance) =>
+                  setAccountForm((prev) => ({ ...prev, initialBalance }))
+                }
+              />
+              <button
+                onClick={() => {
+                  finance.addAccount({
+                    name: accountForm.name,
+                    type: "account",
+                    initialBalance: Number(accountForm.initialBalance || 0)
+                  });
+                  setAccountForm({ name: "", initialBalance: "" });
+                }}
+                className="rounded-2xl bg-slate-900 px-5 py-3 font-medium text-white transition hover:bg-slate-800"
+              >
+                Adicionar banco
+              </button>
+            </div>
+          </div>
+        </Panel>
+      </div>
+
+      <div className="grid gap-6 xl:grid-cols-[0.82fr_1.18fr]">
         <Panel eyebrow="Nova categoria" title="Personalize como voce organiza seus gastos">
           <div className="grid gap-3">
             <TextInput
@@ -154,34 +161,32 @@ export default function AccountsPage({ finance }: { finance: FinanceStore }) {
                 }}
                 className="rounded-2xl bg-sky-300 px-5 py-3 font-medium text-slate-950 transition hover:bg-sky-200"
               >
-                Criar
+                Criar categoria
               </button>
             </div>
             <p className="text-xs text-slate-400">Maximo de 32 caracteres por categoria.</p>
           </div>
         </Panel>
-      </div>
 
-      <div className="grid gap-6 xl:grid-cols-2">
         <Panel eyebrow="Categorias" title="Como seus gastos aparecem no dashboard">
-          <div className="grid gap-4 lg:grid-cols-2">
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
             {finance.categories.map((category) => (
               <div
                 key={category.id}
-                className="grid min-h-[118px] gap-4 rounded-2xl border border-slate-200 bg-slate-50 p-5 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center"
+                className="flex min-h-[88px] items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3"
               >
                 <div className="flex min-w-0 items-start gap-3">
                   <span
                     className="mt-1 h-3 w-3 shrink-0 rounded-full"
                     style={{ backgroundColor: category.color }}
                   />
-                  <p className="max-w-[32ch] text-lg font-medium leading-7 text-slate-900 [overflow-wrap:anywhere]">
+                  <p className="text-sm font-medium leading-6 text-slate-900 [overflow-wrap:anywhere]">
                     {category.name}
                   </p>
                 </div>
                 <button
                   onClick={() => finance.removeCategory(category.id)}
-                  className="w-full rounded-full border border-rose-200 bg-rose-50 px-4 py-2 text-xs font-medium text-rose-700 lg:w-auto"
+                  className="shrink-0 rounded-full border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-medium text-rose-700"
                 >
                   Excluir
                 </button>

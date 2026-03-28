@@ -43,7 +43,7 @@ export default function SavingsPanel({ finance }: { finance: FinanceStore }) {
             placeholder="Ex.: Reserva, Harry Styles, Tesouro"
             onInput={(name) => setForm((prev) => ({ ...prev, name }))}
           />
-          <div className="grid gap-3 md:grid-cols-2">
+          <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
             <SelectInput
               value={form.type}
               onChange={(type) => setForm((prev) => ({ ...prev, type: type as typeof prev.type }))}
@@ -94,17 +94,19 @@ export default function SavingsPanel({ finance }: { finance: FinanceStore }) {
             {finance.savingsBuckets.map((bucket) => (
               <div
                 key={bucket.id}
-                className="rounded-[28px] border border-slate-200 bg-slate-50 p-4"
+                className="rounded-[24px] border border-slate-200 bg-slate-50 p-4"
               >
-                <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-                  <div>
+                <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-start">
+                  <div className="min-w-0">
                     {editingBucketId === bucket.id ? (
-                      <div className="flex flex-wrap items-center gap-2">
-                        <TextInput
-                          value={editingName}
-                          placeholder="Novo nome"
-                          onInput={setEditingName}
-                        />
+                      <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto]">
+                        <div className="min-w-0">
+                          <TextInput
+                            value={editingName}
+                            placeholder="Novo nome"
+                            onInput={setEditingName}
+                          />
+                        </div>
                         <button
                           onClick={() => {
                             finance.updateSavingsBucket(bucket.id, { name: editingName || bucket.name });
@@ -118,7 +120,9 @@ export default function SavingsPanel({ finance }: { finance: FinanceStore }) {
                       </div>
                     ) : (
                       <div className="flex flex-wrap items-center gap-2">
-                        <p className="font-medium text-slate-900">{bucket.name}</p>
+                        <p className="text-base font-medium text-slate-900 [overflow-wrap:anywhere]">
+                          {bucket.name}
+                        </p>
                         <button
                           onClick={() => {
                             setEditingBucketId(bucket.id);
@@ -140,13 +144,13 @@ export default function SavingsPanel({ finance }: { finance: FinanceStore }) {
                       Criado em {formatDate(bucket.createdAt)}
                     </p>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <p className="text-lg font-semibold text-slate-900">
+                  <div className="flex flex-wrap items-center gap-2 lg:justify-end">
+                    <p className="rounded-full bg-white px-3 py-2 text-sm font-semibold text-slate-900">
                       {formatCurrency(bucket.amount)}
                     </p>
                     <button
                       onClick={() => finance.removeSavingsBucket(bucket.id)}
-                      className="rounded-full border border-rose-200 bg-rose-50 px-3 py-1 text-xs font-medium text-rose-700"
+                      className="rounded-full border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-medium text-rose-700"
                     >
                       Excluir
                     </button>
