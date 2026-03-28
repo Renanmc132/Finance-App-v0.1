@@ -165,7 +165,23 @@ export default function App() {
               <ExpensesPage finance={finance} />
             </div>
 
-            <GoalsPanel finance={finance} />
+            <section className="rounded-[36px] border border-emerald-100 bg-gradient-to-br from-emerald-50 via-white to-cyan-50 p-4 shadow-[0_20px_60px_rgba(16,185,129,0.08)] md:p-6">
+              <div className="mb-5 flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.32em] text-emerald-700">
+                    Metas em destaque
+                  </p>
+                  <h2 className="mt-2 text-3xl font-semibold text-slate-900">
+                    Area de metas da home
+                  </h2>
+                  <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
+                    Aqui voce cria metas, ajusta o valor guardado manualmente e registra aportes
+                    sem precisar procurar essa parte em outro lugar da pagina.
+                  </p>
+                </div>
+              </div>
+              <GoalsPanel finance={finance} />
+            </section>
 
             <div className="grid gap-8 xl:grid-cols-[0.95fr_1.05fr]">
               <SavingsPanel finance={finance} />
