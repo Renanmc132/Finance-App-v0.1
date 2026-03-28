@@ -10,7 +10,8 @@ export default function GoalsPanel({ finance }: { finance: FinanceStore }) {
     deadline: ""
   });
   const [contributionForm, setContributionForm] = useState<Record<string, { amount: string; accountId: string }>>({});
-  const [manualSavedForm, setManualSavedForm] = useState<Record<string, string>>({});
+  const [editingContributionId, setEditingContributionId] = useState<string | null>(null);
+  const [editingContributionAmount, setEditingContributionAmount] = useState("");
 
   return (
     <Panel eyebrow="Metas" title="Reserve dinheiro para o que importa">
@@ -73,8 +74,9 @@ export default function GoalsPanel({ finance }: { finance: FinanceStore }) {
                 amount: "",
                 accountId: finance.accounts[0]?.id ?? ""
               };
-              const manualSavedAmount = manualSavedForm[goal.id] ?? String(goal.savedAmount);
-              const goalHistory = finance.goalContributions.filter((item) => item.goalId === goal.id).slice(0, 3);
+              const goalHistory = finance.goalContributions
+                .filter((item) => item.goalId === goal.id)
+                .slice(0, 5);
               return (
                 <div
                   key={goal.id}
@@ -98,29 +100,6 @@ export default function GoalsPanel({ finance }: { finance: FinanceStore }) {
                     <div className="h-2 rounded-full bg-emerald-400" style={{ width: `${progress}%` }} />
                   </div>
                   <div className="mt-4 grid gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                    <p className="text-sm font-medium text-slate-700">Ajustar valor guardado na meta</p>
-                    <div className="grid gap-3 md:grid-cols-[1fr_auto]">
-                      <TextInput
-                        value={manualSavedAmount}
-                        placeholder="Quanto essa meta tem hoje"
-                        type="number"
-                        onInput={(value) =>
-                          setManualSavedForm((prev) => ({
-                            ...prev,
-                            [goal.id]: value
-                          }))
-                        }
-                      />
-                      <button
-                        onClick={() => finance.updateGoalSavedAmount(goal.id, Number(manualSavedAmount || 0))}
-                        className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-800"
-                      >
-                        Salvar ajuste
-                      </button>
-                    </div>
-                    <p className="text-xs leading-5 text-slate-500">
-                      Use esse campo para corrigir manualmente o total guardado da meta, sem precisar apagar a meta.
-                    </p>
                     <p className="text-sm font-medium text-slate-700">Adicionar dinheiro na meta</p>
                     <div className="grid gap-3 md:grid-cols-2">
                       <TextInput
@@ -180,14 +159,69 @@ export default function GoalsPanel({ finance }: { finance: FinanceStore }) {
                         {goalHistory.map((item) => (
                           <div
                             key={item.id}
-                            className="flex items-center justify-between rounded-xl bg-white px-3 py-2 text-sm"
+                            className="rounded-xl bg-white px-3 py-3 text-sm"
                           >
-                            <span className="text-slate-600">
-                              {finance.accounts.find((account) => account.id === item.accountId)?.name ?? "Conta"} - {formatDate(item.date)}
-                            </span>
-                            <span className="font-medium text-slate-900">
-                              {formatCurrency(item.amount)}
-                            </span>
+                            {editingContributionId === item.id ? (
+                              <div className="grid gap-3 md:grid-cols-[1fr_auto_auto] md:items-center">
+                                <TextInput
+                                  value={editingContributionAmount}
+                                  placeholder="Novo valor do aporte"
+                                  type="number"
+                                  onInput={setEditingContributionAmount}
+                                />
+                                <button
+                                  onClick={() => {
+                                    finance.updateGoalContribution(
+                                      item.id,
+                                      Number(editingContributionAmount || 0)
+                                    );
+                                    setEditingContributionId(null);
+                                    setEditingContributionAmount("");
+                                  }}
+                                  className="rounded-2xl bg-slate-900 px-4 py-2 text-sm font-medium text-white"
+                                >
+                                  Atualizar aporte
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    setEditingContributionId(null);
+                                    setEditingContributionAmount("");
+                                  }}
+                                  className="rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700"
+                                >
+                                  Cancelar
+                                </button>
+                              </div>
+                            ) : (
+                              <div className="flex items-center justify-between gap-3">
+                                <div>
+                                  <span className="text-slate-600">
+                                    {finance.accounts.find((account) => account.id === item.accountId)?.name ?? "Conta"} - {formatDate(item.date)}
+                                  </span>
+                                  <p className="mt-1 font-medium text-slate-900">
+                                    {formatCurrency(item.amount)}
+                                  </p>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <button
+                                    onClick={() => {
+                                      setEditingContributionId(item.id);
+                                      setEditingContributionAmount(String(item.amount));
+                                    }}
+                                    className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-700"
+                                    aria-label="Editar aporte"
+                                  >
+                                    Editar
+                                  </button>
+                                  <button
+                                    onClick={() => finance.removeGoalContribution(item.id)}
+                                    className="rounded-full border border-rose-200 bg-rose-50 px-3 py-1 text-xs font-medium text-rose-700"
+                                  >
+                                    Excluir
+                                  </button>
+                                </div>
+                              </div>
+                            )}
                           </div>
                         ))}
                       </div>

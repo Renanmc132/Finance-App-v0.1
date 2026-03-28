@@ -612,6 +612,62 @@ export function useFinance(session?: Session | null) {
     }));
   }
 
+  function updateGoalContribution(id: string, amount: number) {
+    if (!Number.isFinite(amount) || amount < 0) {
+      return;
+    }
+
+    setFinance((prev) => {
+      const contribution = prev.goalContributions.find((item) => item.id === id);
+      if (!contribution) {
+        return prev;
+      }
+
+      const difference = amount - contribution.amount;
+
+      return {
+        ...prev,
+        goalContributions: prev.goalContributions.map((item) =>
+          item.id === id ? { ...item, amount } : item
+        ),
+        goals: prev.goals.map((goal) =>
+          goal.id === contribution.goalId
+            ? { ...goal, savedAmount: goal.savedAmount + difference }
+            : goal
+        ),
+        accounts: prev.accounts.map((account) =>
+          account.id === contribution.accountId
+            ? { ...account, balance: account.balance - difference }
+            : account
+        )
+      };
+    });
+  }
+
+  function removeGoalContribution(id: string) {
+    setFinance((prev) => {
+      const contribution = prev.goalContributions.find((item) => item.id === id);
+      if (!contribution) {
+        return prev;
+      }
+
+      return {
+        ...prev,
+        goalContributions: prev.goalContributions.filter((item) => item.id !== id),
+        goals: prev.goals.map((goal) =>
+          goal.id === contribution.goalId
+            ? { ...goal, savedAmount: Math.max(0, goal.savedAmount - contribution.amount) }
+            : goal
+        ),
+        accounts: prev.accounts.map((account) =>
+          account.id === contribution.accountId
+            ? { ...account, balance: account.balance + contribution.amount }
+            : account
+        )
+      };
+    });
+  }
+
   function addSavingsBucket(input: AddSavingsBucketInput) {
     if (!input.name.trim()) {
       return;
@@ -774,6 +830,8 @@ export function useFinance(session?: Session | null) {
     removeGoal,
     updateGoalSavedAmount,
     addGoalContribution,
+    updateGoalContribution,
+    removeGoalContribution,
     addSavingsBucket,
     removeSavingsBucket,
     addCreditCard,
