@@ -14,7 +14,7 @@ export default function AccountsPage({ finance }: { finance: FinanceStore }) {
 
   return (
     <div className="space-y-6">
-      <div className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
+      <div className="grid gap-6 xl:grid-cols-[1.08fr_0.92fr]">
         <Panel eyebrow="Bancos" title="Saldo atual por banco">
           <div className="space-y-3">
             {finance.accounts.length === 0 ? (
@@ -133,7 +133,7 @@ export default function AccountsPage({ finance }: { finance: FinanceStore }) {
         </Panel>
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-[0.82fr_1.18fr]">
+      <div className="grid gap-6 xl:grid-cols-[0.78fr_1.22fr]">
         <Panel eyebrow="Nova categoria" title="Personalize como voce organiza seus gastos">
           <div className="grid gap-3">
             <TextInput
@@ -167,37 +167,37 @@ export default function AccountsPage({ finance }: { finance: FinanceStore }) {
             <p className="text-xs text-slate-400">Maximo de 32 caracteres por categoria.</p>
           </div>
         </Panel>
-
-        <Panel eyebrow="Categorias" title="Como seus gastos aparecem no dashboard">
-          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-            {finance.categories.map((category) => (
-              <div
-                key={category.id}
-                className="flex min-h-[88px] items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3"
-              >
-                <div className="flex min-w-0 items-start gap-3">
-                  <span
-                    className="mt-1 h-3 w-3 shrink-0 rounded-full"
-                    style={{ backgroundColor: category.color }}
-                  />
-                  <p className="text-sm font-medium leading-6 text-slate-900 [overflow-wrap:anywhere]">
-                    {category.name}
-                  </p>
-                </div>
-                <button
-                  onClick={() => finance.removeCategory(category.id)}
-                  className="shrink-0 rounded-full border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-medium text-rose-700"
-                >
-                  Excluir
-                </button>
-              </div>
-            ))}
-          </div>
-          <p className="mt-4 text-xs text-slate-400">
-            Os cards de categoria foram dimensionados para suportar nomes de ate 32 caracteres.
-          </p>
-        </Panel>
       </div>
+
+      <Panel eyebrow="Categorias" title="Como seus gastos aparecem no dashboard">
+        <div className="grid gap-3 md:grid-cols-2">
+          {finance.categories.map((category) => (
+            <div
+              key={category.id}
+              className="flex min-h-[72px] items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3"
+            >
+              <div className="flex min-w-0 items-center gap-3">
+                <span
+                  className="h-3 w-3 shrink-0 rounded-full"
+                  style={{ backgroundColor: category.color }}
+                />
+                <p className="text-base font-medium text-slate-900 [overflow-wrap:anywhere]">
+                  {category.name}
+                </p>
+              </div>
+              <button
+                onClick={() => finance.removeCategory(category.id)}
+                className="shrink-0 rounded-full border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-medium text-rose-700"
+              >
+                Excluir
+              </button>
+            </div>
+          ))}
+        </div>
+        <p className="mt-4 text-xs text-slate-400">
+          As categorias agora ficam em uma area mais larga para nao espremer nomes grandes.
+        </p>
+      </Panel>
     </div>
   );
 }
