@@ -52,9 +52,9 @@ export default function App() {
 
   return (
     <main className="min-h-screen px-4 py-6 md:px-6 md:py-10">
-      <div className="mx-auto flex max-w-[1500px] flex-col gap-10">
+      <div className="mx-auto flex max-w-[1600px] flex-col gap-10">
         <section className="rounded-[36px] border border-white/70 bg-white/85 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur">
-          <div className="grid gap-8 px-6 py-8 md:grid-cols-[1.2fr_0.95fr] md:px-10 md:py-10">
+          <div className="grid gap-8 px-5 py-8 md:grid-cols-[1.2fr_0.95fr] md:px-10 md:py-10">
             <div className="space-y-4">
               <p className="text-sm uppercase tracking-[0.28em] text-slate-500">
                 Controle financeiro pessoal
@@ -193,10 +193,8 @@ export default function App() {
               <AccountsPage finance={finance} />
             </div>
 
-            <div className="grid gap-8 xl:grid-cols-[1fr_0.9fr]">
-              <AnnualOverview finance={finance} selectedYear={selectedYear} />
-              <SettingsPanel finance={finance} />
-            </div>
+            <AnnualOverview finance={finance} selectedYear={selectedYear} />
+            <SettingsPanel finance={finance} />
           </>
         ) : (
           <div className="space-y-6">

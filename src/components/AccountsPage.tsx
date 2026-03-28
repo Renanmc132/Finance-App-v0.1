@@ -47,7 +47,7 @@ export default function AccountsPage({ finance }: { finance: FinanceStore }) {
         </Panel>
 
         <Panel eyebrow="Nova categoria" title="Personalize como voce organiza seus gastos">
-          <div className="grid gap-3 sm:grid-cols-[1fr_auto_auto]">
+          <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto_auto]">
             <TextInput
               value={categoryForm.name}
               placeholder="Ex.: Saude, pets, estudos"
@@ -62,7 +62,7 @@ export default function AccountsPage({ finance }: { finance: FinanceStore }) {
                   color: (event.currentTarget as HTMLInputElement).value
                 }))
               }
-              className="h-[52px] w-[72px] rounded-2xl border border-slate-200 bg-slate-50 p-2"
+              className="h-[52px] w-full rounded-2xl border border-slate-200 bg-slate-50 p-2 md:w-[72px]"
             />
             <button
               onClick={() => {
@@ -96,13 +96,15 @@ export default function AccountsPage({ finance }: { finance: FinanceStore }) {
                     key={account.id}
                     className="rounded-2xl border border-slate-200 bg-slate-50 p-4"
                   >
-                    <summary className="flex cursor-pointer list-none items-center justify-between gap-4">
-                      <div>
-                        <p className="font-medium text-slate-900">{account.name}</p>
+                    <summary className="flex cursor-pointer list-none flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                      <div className="min-w-0 flex-1">
+                        <p className="font-medium text-slate-900 [overflow-wrap:anywhere]">
+                          {account.name}
+                        </p>
                         <p className="text-sm text-slate-500">Clique para ver detalhes</p>
                       </div>
-                      <div className="flex items-center gap-3">
-                        <p className="text-lg font-semibold text-emerald-600">
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                        <p className="text-lg font-semibold text-emerald-600 sm:text-right">
                           {formatCurrency(account.balance)}
                         </p>
                         <button
@@ -110,7 +112,7 @@ export default function AccountsPage({ finance }: { finance: FinanceStore }) {
                             event.preventDefault();
                             finance.removeAccount(account.id);
                           }}
-                          className="rounded-full border border-rose-200 bg-rose-50 px-3 py-1 text-xs font-medium text-rose-700"
+                          className="w-full rounded-full border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-medium text-rose-700 sm:w-auto"
                         >
                           Excluir
                         </button>
@@ -157,22 +159,24 @@ export default function AccountsPage({ finance }: { finance: FinanceStore }) {
         </Panel>
 
         <Panel eyebrow="Categorias" title="Como seus gastos aparecem no dashboard">
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="grid gap-3 md:grid-cols-2">
             {finance.categories.map((category) => (
               <div
                 key={category.id}
-                className="flex items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4"
+                className="flex min-w-0 flex-col gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 sm:flex-row sm:items-center sm:justify-between"
               >
-                <div className="flex items-center gap-3">
+                <div className="flex min-w-0 items-center gap-3">
                   <span
-                    className="h-3 w-3 rounded-full"
+                    className="h-3 w-3 shrink-0 rounded-full"
                     style={{ backgroundColor: category.color }}
                   />
-                  <p className="font-medium text-slate-900">{category.name}</p>
+                  <p className="font-medium text-slate-900 [overflow-wrap:anywhere]">
+                    {category.name}
+                  </p>
                 </div>
                 <button
                   onClick={() => finance.removeCategory(category.id)}
-                  className="rounded-full border border-rose-200 bg-rose-50 px-3 py-1 text-xs font-medium text-rose-700"
+                  className="w-full rounded-full border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-medium text-rose-700 sm:w-auto"
                 >
                   Excluir
                 </button>

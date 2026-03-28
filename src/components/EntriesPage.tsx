@@ -27,7 +27,7 @@ export default function EntriesPage({ finance }: { finance: FinanceStore }) {
             placeholder="Ex.: Salario, bonus, Pix da Maria"
             onInput={(description) => setForm((prev) => ({ ...prev, description }))}
           />
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="grid gap-3 md:grid-cols-2">
             <TextInput
               value={form.amount}
               placeholder="Valor"
@@ -41,7 +41,7 @@ export default function EntriesPage({ finance }: { finance: FinanceStore }) {
               onInput={(date) => setForm((prev) => ({ ...prev, date }))}
             />
           </div>
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="grid gap-3 md:grid-cols-2">
             <SelectInput
               value={form.type}
               onChange={(type) => setForm((prev) => ({ ...prev, type: type as typeof prev.type }))}
@@ -89,16 +89,18 @@ export default function EntriesPage({ finance }: { finance: FinanceStore }) {
             {finance.incomes.map((income) => (
               <div
                 key={income.id}
-                className="flex items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-slate-50 p-4"
+                className="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between"
               >
-                <div>
-                  <p className="font-medium text-slate-900">{income.description}</p>
+                <div className="min-w-0 flex-1">
+                  <p className="font-medium text-slate-900 [overflow-wrap:anywhere]">
+                    {income.description}
+                  </p>
                   <p className="text-sm text-slate-500">
                     {finance.accounts.find((account) => account.id === income.accountId)?.name} -{" "}
                     {formatDate(income.date)}
                   </p>
                 </div>
-                <div className="text-right">
+                <div className="sm:text-right">
                   <p className="font-medium text-emerald-600">{formatCurrency(income.amount)}</p>
                   <p className="text-sm text-slate-500">
                     {incomeTypeOptions.find((item) => item.value === income.type)?.label}
@@ -106,7 +108,7 @@ export default function EntriesPage({ finance }: { finance: FinanceStore }) {
                 </div>
                 <button
                   onClick={() => finance.removeIncome(income.id)}
-                  className="rounded-full border border-rose-200 bg-rose-50 px-3 py-1 text-xs font-medium text-rose-700"
+                  className="w-full rounded-full border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-medium text-rose-700 sm:w-auto"
                 >
                   Excluir
                 </button>

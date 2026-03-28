@@ -70,6 +70,7 @@ export default function AnnualOverview({
   const totalSaldo = rows.reduce((sum, row) => sum + row.saldoFinal, 0);
   const totalGuardado = rows.reduce((sum, row) => sum + row.guardado, 0);
   const totalGastos = rows.reduce((sum, row) => sum + row.gastos, 0);
+  const chartMargin = { top: 12, right: 8, left: 0, bottom: 0 };
 
   const TableBlock = ({
     title,
@@ -119,11 +120,48 @@ export default function AnnualOverview({
     </div>
   );
 
+  const ChartBlock = ({
+    eyebrow,
+    title,
+    dataKey,
+    color
+  }: {
+    eyebrow: string;
+    title: string;
+    dataKey: "saldoFinal" | "guardado" | "gastos";
+    color: string;
+  }) => (
+    <Panel eyebrow={eyebrow} title={title}>
+      <div className="h-[360px] rounded-2xl border border-slate-200 bg-slate-50 p-3 sm:h-[420px] lg:h-[460px]">
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart data={rows} margin={chartMargin} barCategoryGap="18%">
+            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+            <XAxis
+              dataKey="month"
+              tickFormatter={(value) => String(value).slice(0, 3)}
+              tickLine={false}
+              axisLine={false}
+              minTickGap={16}
+            />
+            <YAxis
+              width={56}
+              tickFormatter={(value) => `R$${Number(value).toFixed(0)}`}
+              tickLine={false}
+              axisLine={false}
+            />
+            <Tooltip formatter={(value) => formatCurrency(Number(value ?? 0))} />
+            <Bar dataKey={dataKey} fill={color} radius={[10, 10, 0, 0]} maxBarSize={44} />
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+    </Panel>
+  );
+
   return (
     <section className="space-y-6">
       <div>
         <p className="text-sm uppercase tracking-[0.28em] text-slate-500">Analise geral</p>
-        <h2 className="mt-2 text-3xl font-semibold text-slate-900">
+        <h2 className="mt-2 text-3xl font-semibold text-slate-900 sm:text-4xl">
           Visao anual de {selectedYear}
         </h2>
         <div className="mt-4 inline-flex gap-2 rounded-2xl bg-slate-100 p-1">
@@ -156,46 +194,27 @@ export default function AnnualOverview({
           <TableBlock title="Gastos" valueKey="gastos" />
         </div>
       ) : (
-        <div className="grid gap-6 xl:grid-cols-3">
-          <Panel eyebrow="Saldo final" title="Comportamento do saldo">
-            <div className="h-[320px] rounded-2xl border border-slate-200 bg-slate-50 p-3">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={rows}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                  <XAxis dataKey="month" tickFormatter={(value) => String(value).slice(0, 3)} tickLine={false} axisLine={false} />
-                  <YAxis tickFormatter={(value) => `R$${Number(value).toFixed(0)}`} tickLine={false} axisLine={false} />
-                  <Tooltip formatter={(value) => formatCurrency(Number(value ?? 0))} />
-                  <Bar dataKey="saldoFinal" fill="#60a5fa" radius={[8, 8, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </Panel>
-          <Panel eyebrow="Guardado" title="Evolucao do guardado">
-            <div className="h-[320px] rounded-2xl border border-slate-200 bg-slate-50 p-3">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={rows}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                  <XAxis dataKey="month" tickFormatter={(value) => String(value).slice(0, 3)} tickLine={false} axisLine={false} />
-                  <YAxis tickFormatter={(value) => `R$${Number(value).toFixed(0)}`} tickLine={false} axisLine={false} />
-                  <Tooltip formatter={(value) => formatCurrency(Number(value ?? 0))} />
-                  <Bar dataKey="guardado" fill="#34d399" radius={[8, 8, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </Panel>
-          <Panel eyebrow="Gastos" title="Gastos pagos no ano">
-            <div className="h-[320px] rounded-2xl border border-slate-200 bg-slate-50 p-3">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={rows}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                  <XAxis dataKey="month" tickFormatter={(value) => String(value).slice(0, 3)} tickLine={false} axisLine={false} />
-                  <YAxis tickFormatter={(value) => `R$${Number(value).toFixed(0)}`} tickLine={false} axisLine={false} />
-                  <Tooltip formatter={(value) => formatCurrency(Number(value ?? 0))} />
-                  <Bar dataKey="gastos" fill="#f59e0b" radius={[8, 8, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </Panel>
+        <div className="grid gap-6">
+          <ChartBlock
+            eyebrow="Saldo final"
+            title="Comportamento do saldo"
+            dataKey="saldoFinal"
+            color="#60a5fa"
+          />
+          <div className="grid gap-6 xl:grid-cols-2">
+            <ChartBlock
+              eyebrow="Guardado"
+              title="Evolucao do guardado"
+              dataKey="guardado"
+              color="#34d399"
+            />
+            <ChartBlock
+              eyebrow="Gastos"
+              title="Gastos pagos no ano"
+              dataKey="gastos"
+              color="#f59e0b"
+            />
+          </div>
         </div>
       )}
       <Panel eyebrow="Leitura rapida" title="Como interpretar essa analise">

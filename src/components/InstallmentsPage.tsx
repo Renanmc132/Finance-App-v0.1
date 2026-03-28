@@ -34,7 +34,7 @@ export default function InstallmentsPage({ finance }: { finance: FinanceStore })
             placeholder="Nome da compra parcelada. Ex.: Celular, curso, sofa"
             onInput={(title) => setForm((prev) => ({ ...prev, title }))}
           />
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="grid gap-3 md:grid-cols-2">
             <TextInput
               value={form.totalInstallments}
               placeholder="Quantas parcelas existem no total"
@@ -48,7 +48,7 @@ export default function InstallmentsPage({ finance }: { finance: FinanceStore })
               onInput={(installmentAmount) => setForm((prev) => ({ ...prev, installmentAmount }))}
             />
           </div>
-          <div className="grid gap-3 sm:grid-cols-3">
+          <div className="grid gap-3 md:grid-cols-3">
             <TextInput
               value={form.dueDay}
               placeholder="Dia em que costuma vencer"
@@ -138,14 +138,16 @@ export default function InstallmentsPage({ finance }: { finance: FinanceStore })
                   key={plan.id}
                   className="rounded-2xl border border-slate-200 bg-slate-50 p-4"
                 >
-                  <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                      <p className="font-medium text-slate-900">{plan.title}</p>
+                  <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium text-slate-900 [overflow-wrap:anywhere]">
+                        {plan.title}
+                      </p>
                       <p className="text-sm text-slate-500">
                         {categoryName(plan.categoryId)} - {accountName(plan.accountId)} - vence dia {plan.dueDay}
                       </p>
                     </div>
-                    <div className="text-right">
+                    <div className="sm:text-right">
                       <p className="font-medium text-slate-900">
                         {nextInstallment}/{plan.totalInstallments}
                       </p>
@@ -160,25 +162,27 @@ export default function InstallmentsPage({ finance }: { finance: FinanceStore })
                   <div className="mt-4 h-2 rounded-full bg-slate-200">
                     <div className="h-2 rounded-full bg-amber-300" style={{ width: `${progress}%` }} />
                   </div>
-                  <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="mt-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                     <p className="text-sm text-slate-500">
                       {finished
                         ? "Todas as parcelas foram pagas."
                         : `${plan.totalInstallments - plan.paidInstallments} parcela(s) restantes.`}
                     </p>
-                    <button
-                      onClick={() => finance.payInstallment(plan.id, today)}
-                      disabled={finished}
-                      className="rounded-full bg-amber-300 px-4 py-2 text-sm font-medium text-slate-950 transition hover:bg-amber-200 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400"
-                    >
-                      {finished ? "Finalizado" : "Marcar parcela paga"}
-                    </button>
-                    <button
-                      onClick={() => finance.removeInstallmentPlan(plan.id)}
-                      className="rounded-full border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-medium text-rose-700"
-                    >
-                      Excluir
-                    </button>
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                      <button
+                        onClick={() => finance.payInstallment(plan.id, today)}
+                        disabled={finished}
+                        className="w-full rounded-full bg-amber-300 px-4 py-2 text-sm font-medium text-slate-950 transition hover:bg-amber-200 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400 sm:w-auto"
+                      >
+                        {finished ? "Finalizado" : "Marcar parcela paga"}
+                      </button>
+                      <button
+                        onClick={() => finance.removeInstallmentPlan(plan.id)}
+                        className="w-full rounded-full border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-medium text-rose-700 sm:w-auto"
+                      >
+                        Excluir
+                      </button>
+                    </div>
                   </div>
                 </div>
               );
