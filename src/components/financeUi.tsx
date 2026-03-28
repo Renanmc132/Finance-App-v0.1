@@ -28,10 +28,12 @@ export function Panel({
   children: ComponentChildren;
 }) {
   return (
-    <section className="rounded-[28px] border border-slate-200 bg-white p-5 shadow-sm">
-      <p className="text-xs uppercase tracking-[0.28em] text-slate-500">{eyebrow}</p>
-      <h2 className="mt-2 text-2xl font-semibold text-slate-900">{title}</h2>
-      <div className="mt-4">{children}</div>
+    <section className="rounded-[32px] border border-white/70 bg-white/90 p-6 shadow-[0_16px_48px_rgba(15,23,42,0.08)] backdrop-blur md:p-7">
+      <p className="text-xs uppercase tracking-[0.32em] text-slate-500">{eyebrow}</p>
+      <h2 className="mt-3 text-[1.7rem] font-semibold leading-tight text-slate-900 md:text-[1.9rem]">
+        {title}
+      </h2>
+      <div className="mt-5">{children}</div>
     </section>
   );
 }
@@ -61,7 +63,7 @@ export function TextInput({
       placeholder={placeholder}
       type={type}
       onInput={(event: Event) => onInput((event.currentTarget as HTMLInputElement).value)}
-      className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-slate-900 outline-none transition focus:border-slate-400 focus:bg-white"
+      className="min-h-[52px] rounded-2xl border border-slate-200 bg-slate-50/80 px-4 py-3 text-slate-900 shadow-sm outline-none transition focus:border-slate-400 focus:bg-white"
     />
   );
 }
@@ -81,7 +83,7 @@ export function SelectInput({
       onChange={(event: Event) =>
         onChange((event.currentTarget as HTMLSelectElement).value)
       }
-      className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-slate-900 outline-none transition focus:border-slate-400 focus:bg-white"
+      className="min-h-[52px] rounded-2xl border border-slate-200 bg-slate-50/80 px-4 py-3 text-slate-900 shadow-sm outline-none transition focus:border-slate-400 focus:bg-white"
     >
       {children}
     </select>

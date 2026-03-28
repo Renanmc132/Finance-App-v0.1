@@ -51,10 +51,10 @@ export default function App() {
   }
 
   return (
-    <main className="min-h-screen px-4 py-6 md:px-6 md:py-8">
-      <div className="mx-auto flex max-w-7xl flex-col gap-8">
-        <section className="rounded-[32px] border border-slate-200 bg-white shadow-sm">
-          <div className="grid gap-6 px-6 py-8 md:grid-cols-[1.3fr_0.9fr] md:px-8">
+    <main className="min-h-screen px-4 py-6 md:px-6 md:py-10">
+      <div className="mx-auto flex max-w-[1500px] flex-col gap-10">
+        <section className="rounded-[36px] border border-white/70 bg-white/85 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur">
+          <div className="grid gap-8 px-6 py-8 md:grid-cols-[1.2fr_0.95fr] md:px-10 md:py-10">
             <div className="space-y-4">
               <p className="text-sm uppercase tracking-[0.28em] text-slate-500">
                 Controle financeiro pessoal
@@ -67,13 +67,13 @@ export default function App() {
                 mesma pagina. Depois a gente aprofunda com dashboards mensais e anuais.
               </p>
               <div className="flex flex-wrap gap-3">
-                <div className="flex gap-2 rounded-2xl border border-slate-200 bg-slate-50 p-1">
+                <div className="flex gap-2 rounded-2xl border border-slate-200 bg-slate-100/80 p-1.5">
                   <button
                     onClick={() => setView("home")}
                     className={
                       view === "home"
-                        ? "rounded-xl bg-white px-4 py-2 text-sm font-medium text-slate-900 shadow-sm"
-                        : "rounded-xl px-4 py-2 text-sm text-slate-500"
+                        ? "rounded-xl bg-white px-5 py-2.5 text-sm font-medium text-slate-900 shadow-sm"
+                        : "rounded-xl px-5 py-2.5 text-sm text-slate-500"
                     }
                   >
                     Home
@@ -82,14 +82,14 @@ export default function App() {
                     onClick={() => setView("dashboards")}
                     className={
                       view === "dashboards"
-                        ? "rounded-xl bg-white px-4 py-2 text-sm font-medium text-slate-900 shadow-sm"
-                        : "rounded-xl px-4 py-2 text-sm text-slate-500"
+                        ? "rounded-xl bg-white px-5 py-2.5 text-sm font-medium text-slate-900 shadow-sm"
+                        : "rounded-xl px-5 py-2.5 text-sm text-slate-500"
                     }
                   >
                     Dashboards
                   </button>
                 </div>
-                <label className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+                <label className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600 shadow-sm">
                   <span className="mb-1 block text-xs uppercase tracking-[0.2em] text-slate-400">
                     Mes
                   </span>
@@ -107,7 +107,7 @@ export default function App() {
                     ))}
                   </select>
                 </label>
-                <label className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+                <label className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600 shadow-sm">
                   <span className="mb-1 block text-xs uppercase tracking-[0.2em] text-slate-400">
                     Ano
                   </span>
@@ -123,13 +123,13 @@ export default function App() {
                 <div className="flex gap-2">
                   <button
                     onClick={() => setSelectedYear((year) => year - 1)}
-                    className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                    className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50"
                   >
                     Ano -
                   </button>
                   <button
                     onClick={() => setSelectedYear((year) => year + 1)}
-                    className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                    className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50"
                   >
                     Ano +
                   </button>
@@ -137,7 +137,7 @@ export default function App() {
                 {auth.session ? (
                   <button
                     onClick={() => supabase?.auth.signOut()}
-                    className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                    className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50"
                   >
                     Sair
                   </button>
@@ -160,26 +160,24 @@ export default function App() {
               selectedYear={selectedYear}
             />
 
-            <div className="grid gap-6 xl:grid-cols-2">
+            <div className="grid gap-8 xl:grid-cols-2">
               <EntriesPage finance={finance} />
               <ExpensesPage finance={finance} />
             </div>
 
-            <div className="grid gap-6">
+            <GoalsPanel finance={finance} />
+
+            <div className="grid gap-8 xl:grid-cols-[0.95fr_1.05fr]">
+              <SavingsPanel finance={finance} />
               <CreditCardsPanel finance={finance} />
             </div>
 
-            <div className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
+            <div className="grid gap-8 xl:grid-cols-[1.15fr_0.85fr]">
               <InstallmentsPage finance={finance} />
-              <div className="space-y-6">
-                <SavingsPanel finance={finance} />
-                <GoalsPanel finance={finance} />
-              </div>
+              <AccountsPage finance={finance} />
             </div>
 
-            <AccountsPage finance={finance} />
-
-            <div className="grid gap-6 xl:grid-cols-[1fr_0.9fr]">
+            <div className="grid gap-8 xl:grid-cols-[1fr_0.9fr]">
               <AnnualOverview finance={finance} selectedYear={selectedYear} />
               <SettingsPanel finance={finance} />
             </div>
