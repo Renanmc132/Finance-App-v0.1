@@ -4,6 +4,8 @@ import { v4 as uuidv4 } from "uuid";
 import {
   Account,
   Category,
+  CreditCard,
+  CreditCardCharge,
   Expense,
   ExpenseStatus,
   ExpenseType,
@@ -58,6 +60,8 @@ const initialState: FinanceData = {
   goals: [],
   goalContributions: [],
   savingsBuckets: [],
+  creditCards: [],
+  creditCardCharges: [],
   preferences: defaultPreferences
 };
 
@@ -110,6 +114,7 @@ type AddSavingsBucketInput = {
   amount: number;
   type: SavingsBucket["type"];
   accountId?: string;
+  createdAt: string;
 };
 
 type AddGoalContributionInput = {
@@ -117,6 +122,25 @@ type AddGoalContributionInput = {
   accountId: string;
   amount: number;
   date: string;
+};
+
+type AddCreditCardInput = {
+  name: string;
+  accountId: string;
+  limitAmount: number;
+  closingDay: number;
+  dueDay: number;
+};
+
+type AddCreditCardChargeInput = {
+  cardId: string;
+  description: string;
+  amount: number;
+  date: string;
+  categoryId: string;
+  type: ExpenseType;
+  installments?: number;
+  currentInstallment?: number;
 };
 
 function normalizeAccountType(type?: string): Account["type"] {
@@ -165,7 +189,12 @@ function parseStoredFinance(data: string): FinanceData {
       installmentPlans: parsed.installmentPlans ?? [],
       goals: parsed.goals ?? [],
       goalContributions: parsed.goalContributions ?? [],
-      savingsBuckets: parsed.savingsBuckets ?? [],
+      savingsBuckets: (parsed.savingsBuckets ?? []).map((bucket) => ({
+        ...bucket,
+        createdAt: bucket.createdAt ?? new Date().toISOString().slice(0, 10)
+      })),
+      creditCards: parsed.creditCards ?? [],
+      creditCardCharges: parsed.creditCardCharges ?? [],
       preferences: {
         expenseTypeLabels: {
           ...defaultPreferences.expenseTypeLabels,
@@ -283,6 +312,11 @@ export function useFinance(session?: Session | null) {
       incomes: prev.incomes.filter((income) => income.accountId !== id),
       expenses: prev.expenses.filter((expense) => expense.accountId !== id),
       installmentPlans: prev.installmentPlans.filter((plan) => plan.accountId !== id),
+      creditCards: prev.creditCards.filter((card) => card.accountId !== id),
+      creditCardCharges: prev.creditCardCharges.filter((charge) => {
+        const card = prev.creditCards.find((item) => item.id === charge.cardId);
+        return card?.accountId !== id;
+      }),
       savingsBuckets: prev.savingsBuckets.map((bucket) =>
         bucket.accountId === id ? { ...bucket, accountId: undefined } : bucket
       )
@@ -534,6 +568,21 @@ export function useFinance(session?: Session | null) {
     }));
   }
 
+  function updateGoalSavedAmount(id: string, savedAmount: number) {
+    if (!Number.isFinite(savedAmount) || savedAmount < 0) {
+      return;
+    }
+
+    setFinance((prev) => ({
+      ...prev,
+      goals: prev.goals.map((goal) =>
+        goal.id === id
+          ? { ...goal, savedAmount }
+          : goal
+      )
+    }));
+  }
+
   function addGoalContribution(input: AddGoalContributionInput) {
     if (!input.goalId || !input.accountId || !input.amount) {
       return;
@@ -573,7 +622,8 @@ export function useFinance(session?: Session | null) {
       name: input.name.trim(),
       amount: input.amount,
       type: input.type,
-      accountId: input.accountId
+      accountId: input.accountId,
+      createdAt: input.createdAt
     };
 
     setFinance((prev) => ({
@@ -586,6 +636,96 @@ export function useFinance(session?: Session | null) {
     setFinance((prev) => ({
       ...prev,
       savingsBuckets: prev.savingsBuckets.filter((bucket) => bucket.id !== id)
+    }));
+  }
+
+  function addCreditCard(input: AddCreditCardInput) {
+    if (!input.name.trim() || !input.accountId || !input.limitAmount) {
+      return;
+    }
+
+    const creditCard: CreditCard = {
+      id: uuidv4(),
+      name: input.name.trim(),
+      accountId: input.accountId,
+      limitAmount: input.limitAmount,
+      closingDay: input.closingDay,
+      dueDay: input.dueDay
+    };
+
+    setFinance((prev) => ({
+      ...prev,
+      creditCards: [creditCard, ...prev.creditCards]
+    }));
+  }
+
+  function removeCreditCard(id: string) {
+    setFinance((prev) => ({
+      ...prev,
+      creditCards: prev.creditCards.filter((card) => card.id !== id),
+      creditCardCharges: prev.creditCardCharges.filter((charge) => charge.cardId !== id)
+    }));
+  }
+
+  function addCreditCardCharge(input: AddCreditCardChargeInput) {
+    if (!input.cardId || !input.description.trim() || !input.amount || !input.categoryId) {
+      return;
+    }
+
+    const charge: CreditCardCharge = {
+      id: uuidv4(),
+      cardId: input.cardId,
+      description: input.description.trim(),
+      amount: input.amount,
+      date: input.date,
+      categoryId: input.categoryId,
+      type: input.type,
+      installments: input.installments,
+      currentInstallment: input.currentInstallment,
+      invoiceStatus: "open"
+    };
+
+    setFinance((prev) => ({
+      ...prev,
+      creditCardCharges: [charge, ...prev.creditCardCharges]
+    }));
+  }
+
+  function payCreditCardInvoice(cardId: string, paidAt: string) {
+    setFinance((prev) => {
+      const card = prev.creditCards.find((item) => item.id === cardId);
+      if (!card) return prev;
+
+      const openCharges = prev.creditCardCharges.filter(
+        (charge) => charge.cardId === cardId && charge.invoiceStatus === "open"
+      );
+
+      if (openCharges.length === 0) {
+        return prev;
+      }
+
+      const totalInvoice = openCharges.reduce((sum, charge) => sum + charge.amount, 0);
+
+      return {
+        ...prev,
+        creditCardCharges: prev.creditCardCharges.map((charge) =>
+          charge.cardId === cardId && charge.invoiceStatus === "open"
+            ? { ...charge, invoiceStatus: "paid", invoicePaidAt: paidAt }
+            : charge
+        ),
+        accounts: prev.accounts.map((account) =>
+          account.id === card.accountId
+            ? { ...account, balance: account.balance - totalInvoice }
+            : account
+        )
+      };
+    });
+  }
+
+  function removeCreditCardCharge(id: string) {
+    setFinance((prev) => ({
+      ...prev,
+      creditCardCharges: prev.creditCardCharges.filter((charge) => charge.id !== id)
     }));
   }
 
@@ -632,9 +772,15 @@ export function useFinance(session?: Session | null) {
     removeInstallmentPlan,
     addGoal,
     removeGoal,
+    updateGoalSavedAmount,
     addGoalContribution,
     addSavingsBucket,
     removeSavingsBucket,
+    addCreditCard,
+    removeCreditCard,
+    addCreditCardCharge,
+    payCreditCardInvoice,
+    removeCreditCardCharge,
     exportData,
     importData,
     updatePreferenceLabel

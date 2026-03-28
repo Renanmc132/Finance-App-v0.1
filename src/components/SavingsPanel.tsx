@@ -1,6 +1,6 @@
 import { useState } from "preact/hooks";
 import { FinanceStore } from "../hooks/useFinance";
-import { EmptyState, Panel, SelectInput, TextInput, formatCurrency } from "./financeUi";
+import { EmptyState, Panel, SelectInput, TextInput, formatCurrency, formatDate, today } from "./financeUi";
 
 const bucketLabels = {
   investment: "Investimento",
@@ -13,7 +13,8 @@ export default function SavingsPanel({ finance }: { finance: FinanceStore }) {
     name: "",
     amount: "",
     type: "investment" as const,
-    accountId: ""
+    accountId: "",
+    createdAt: today
   });
 
   const totalSaved = finance.savingsBuckets.reduce((sum, bucket) => sum + bucket.amount, 0);
@@ -29,6 +30,10 @@ export default function SavingsPanel({ finance }: { finance: FinanceStore }) {
         </div>
 
         <div className="grid gap-3">
+          <p className="text-sm leading-6 text-slate-600">
+            Coloque a data em que esse valor foi guardado. Assim a analise anual entende em
+            qual mes esse investimento ou reserva entrou.
+          </p>
           <TextInput
             value={form.name}
             placeholder="Ex.: Reserva, Harry Styles, Tesouro"
@@ -50,6 +55,12 @@ export default function SavingsPanel({ finance }: { finance: FinanceStore }) {
               <option value="other">Outro</option>
             </SelectInput>
           </div>
+          <TextInput
+            value={form.createdAt}
+            placeholder="Data em que voce guardou esse valor"
+            type="date"
+            onInput={(createdAt) => setForm((prev) => ({ ...prev, createdAt }))}
+          />
           <SelectInput
             value={form.accountId}
             onChange={(accountId) => setForm((prev) => ({ ...prev, accountId }))}
@@ -67,9 +78,10 @@ export default function SavingsPanel({ finance }: { finance: FinanceStore }) {
                 name: form.name,
                 amount: Number(form.amount || 0),
                 type: form.type,
-                accountId: form.accountId || undefined
+                accountId: form.accountId || undefined,
+                createdAt: form.createdAt
               });
-              setForm({ name: "", amount: "", type: "investment", accountId: "" });
+              setForm({ name: "", amount: "", type: "investment", accountId: "", createdAt: today });
             }}
             className="rounded-2xl bg-emerald-400 px-5 py-3 font-medium text-slate-950 transition hover:bg-emerald-300"
           >
@@ -93,6 +105,9 @@ export default function SavingsPanel({ finance }: { finance: FinanceStore }) {
                     {bucket.accountId
                       ? ` - ${finance.accounts.find((account) => account.id === bucket.accountId)?.name ?? "Banco"}`
                       : ""}
+                  </p>
+                  <p className="mt-1 text-sm text-slate-500">
+                    Guardado em {formatDate(bucket.createdAt)}
                   </p>
                 </div>
                 <div className="flex items-center gap-3">

@@ -35,6 +35,10 @@ function getIncomeDate(date: string) {
   return new Date(`${date}T12:00:00`);
 }
 
+function getCreditChargeDate(date?: string) {
+  return new Date(`${date ?? "2000-01-01"}T12:00:00`);
+}
+
 export default function DashboardsPage({
   finance,
   selectedYear
@@ -45,6 +49,11 @@ export default function DashboardsPage({
   const yearSet = new Set<number>();
   finance.incomes.forEach((item) => yearSet.add(getIncomeDate(item.date).getFullYear()));
   finance.expenses.forEach((item) => yearSet.add(getExpenseDate(item.date, item.paidAt).getFullYear()));
+  finance.creditCardCharges.forEach((item) => {
+    if (item.invoicePaidAt) {
+      yearSet.add(getCreditChargeDate(item.invoicePaidAt).getFullYear());
+    }
+  });
   yearSet.add(selectedYear);
 
   const yearlyData = Array.from(yearSet)
@@ -56,11 +65,14 @@ export default function DashboardsPage({
       const expense = finance.expenses
         .filter((item) => item.status === "paid" && getExpenseDate(item.date, item.paidAt).getFullYear() === year)
         .reduce((sum, item) => sum + item.amount, 0);
+      const creditExpense = finance.creditCardCharges
+        .filter((item) => item.invoiceStatus === "paid" && item.invoicePaidAt && getCreditChargeDate(item.invoicePaidAt).getFullYear() === year)
+        .reduce((sum, item) => sum + item.amount, 0);
       return {
         year: String(year),
         entradas: income,
-        gastos: expense,
-        saldo: income - expense
+        gastos: expense + creditExpense,
+        saldo: income - expense - creditExpense
       };
     });
 
@@ -78,12 +90,19 @@ export default function DashboardsPage({
         return date.getFullYear() === selectedYear && date.getMonth() === index;
       })
       .reduce((sum, item) => sum + item.amount, 0);
+    const creditExpense = finance.creditCardCharges
+      .filter((item) => {
+        if (item.invoiceStatus !== "paid" || !item.invoicePaidAt) return false;
+        const date = getCreditChargeDate(item.invoicePaidAt);
+        return date.getFullYear() === selectedYear && date.getMonth() === index;
+      })
+      .reduce((sum, item) => sum + item.amount, 0);
     return {
       month,
       shortMonth: month.slice(0, 3),
       entradas: income,
-      gastos: expense,
-      saldo: income - expense
+      gastos: expense + creditExpense,
+      saldo: income - expense - creditExpense
     };
   });
 
@@ -100,7 +119,15 @@ export default function DashboardsPage({
           const date = getExpenseDate(expense.date, expense.paidAt);
           return expense.accountId === account.id && date.getFullYear() === selectedYear;
         })
-        .reduce((sum, expense) => sum + expense.amount, 0);
+        .reduce((sum, expense) => sum + expense.amount, 0) +
+        finance.creditCardCharges
+          .filter((charge) => {
+            if (charge.invoiceStatus !== "paid" || !charge.invoicePaidAt) return false;
+            const card = finance.creditCards.find((item) => item.id === charge.cardId);
+            const date = getCreditChargeDate(charge.invoicePaidAt);
+            return card?.accountId === account.id && date.getFullYear() === selectedYear;
+          })
+          .reduce((sum, charge) => sum + charge.amount, 0);
       return {
         name: account.name,
         total
@@ -119,7 +146,16 @@ export default function DashboardsPage({
           const date = getExpenseDate(expense.date, expense.paidAt);
           return expense.paymentMethod === method && date.getFullYear() === selectedYear;
         })
-        .reduce((sum, expense) => sum + expense.amount, 0);
+        .reduce((sum, expense) => sum + expense.amount, 0) +
+        (method === "credit"
+          ? finance.creditCardCharges
+              .filter((charge) => {
+                if (charge.invoiceStatus !== "paid" || !charge.invoicePaidAt) return false;
+                const date = getCreditChargeDate(charge.invoicePaidAt);
+                return date.getFullYear() === selectedYear;
+              })
+              .reduce((sum, charge) => sum + charge.amount, 0)
+          : 0);
       return {
         name: label,
         total
@@ -136,7 +172,14 @@ export default function DashboardsPage({
           const date = getExpenseDate(expense.date, expense.paidAt);
           return expense.categoryId === category.id && date.getFullYear() === selectedYear;
         })
-        .reduce((sum, expense) => sum + expense.amount, 0);
+        .reduce((sum, expense) => sum + expense.amount, 0) +
+        finance.creditCardCharges
+          .filter((charge) => {
+            if (charge.invoiceStatus !== "paid" || !charge.invoicePaidAt) return false;
+            const date = getCreditChargeDate(charge.invoicePaidAt);
+            return charge.categoryId === category.id && date.getFullYear() === selectedYear;
+          })
+          .reduce((sum, charge) => sum + charge.amount, 0);
       return {
         name: category.name,
         total
@@ -148,8 +191,16 @@ export default function DashboardsPage({
   const topAccount = accountData[0];
   const topMethod = paymentMethodData[0];
   const topCategory = categoryData[0];
+  const totalAccountBalance = finance.accounts.reduce((sum, account) => sum + account.balance, 0);
   const totalGoalTarget = finance.goals.reduce((sum, goal) => sum + goal.targetAmount, 0);
   const totalGoalSaved = finance.goals.reduce((sum, goal) => sum + goal.savedAmount, 0);
+  const totalInvested = finance.savingsBuckets
+    .filter((bucket) => bucket.type === "investment")
+    .reduce((sum, bucket) => sum + bucket.amount, 0);
+  const totalReserved = finance.savingsBuckets
+    .filter((bucket) => bucket.type === "reserve")
+    .reduce((sum, bucket) => sum + bucket.amount, 0);
+  const totalSavedOutsideGoals = finance.savingsBuckets.reduce((sum, bucket) => sum + bucket.amount, 0);
   const averageGoalProgress =
     finance.goals.length > 0
       ? finance.goals.reduce(
@@ -221,6 +272,49 @@ export default function DashboardsPage({
           </p>
         </div>
       </div>
+
+      <Panel eyebrow="Saldos separados" title="Veja bancos, metas e investimentos lado a lado">
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+            <p className="text-sm text-slate-500">Saldo em conta corrente</p>
+            <p className="mt-2 text-2xl font-semibold text-slate-900">
+              {formatCurrency(totalAccountBalance)}
+            </p>
+          </div>
+          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+            <p className="text-sm text-slate-500">Saldo em metas</p>
+            <p className="mt-2 text-2xl font-semibold text-slate-900">
+              {formatCurrency(totalGoalSaved)}
+            </p>
+          </div>
+          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+            <p className="text-sm text-slate-500">Saldo em investimentos</p>
+            <p className="mt-2 text-2xl font-semibold text-slate-900">
+              {formatCurrency(totalInvested)}
+            </p>
+          </div>
+          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+            <p className="text-sm text-slate-500">Saldo em reserva / guardado</p>
+            <p className="mt-2 text-2xl font-semibold text-slate-900">
+              {formatCurrency(totalReserved)}
+            </p>
+          </div>
+        </div>
+        <div className="mt-4 grid gap-4 md:grid-cols-2">
+          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+            <p className="text-sm text-slate-500">Total guardado fora das metas</p>
+            <p className="mt-2 text-2xl font-semibold text-slate-900">
+              {formatCurrency(totalSavedOutsideGoals)}
+            </p>
+          </div>
+          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+            <p className="text-sm text-slate-500">Total planejado nas metas</p>
+            <p className="mt-2 text-2xl font-semibold text-slate-900">
+              {formatCurrency(totalGoalTarget)}
+            </p>
+          </div>
+        </div>
+      </Panel>
 
       <div className="grid gap-6 xl:grid-cols-2">
         <Panel eyebrow="Comparacao anual" title="Veja quais anos pesaram mais no bolso">

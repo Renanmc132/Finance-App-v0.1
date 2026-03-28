@@ -30,6 +30,7 @@ export default function ExpensesPage({ finance }: { finance: FinanceStore }) {
           <p className="text-sm leading-6 text-slate-600">
             Preencha: o nome do gasto, o valor, a data, de qual banco saiu, a categoria,
             se ele e um gasto unico ou fixo, se ja foi pago e por qual metodo voce pagou.
+            Se foi compra no cartao de credito, lance na area de fatura logo abaixo.
           </p>
           <TextInput
             value={form.description}
@@ -99,7 +100,9 @@ export default function ExpensesPage({ finance }: { finance: FinanceStore }) {
               }))
             }
           >
-            {Object.entries(paymentMethodLabels).map(([value, label]) => (
+            {Object.entries(paymentMethodLabels)
+              .filter(([value]) => value !== "credit")
+              .map(([value, label]) => (
               <option key={value} value={value}>
                 {label}
               </option>

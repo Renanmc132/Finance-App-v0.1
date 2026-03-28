@@ -76,6 +76,30 @@ export type SavingsBucket = {
   amount: number;
   type: "investment" | "reserve" | "other";
   accountId?: string;
+  createdAt: string;
+};
+
+export type CreditCard = {
+  id: string;
+  name: string;
+  accountId: string;
+  limitAmount: number;
+  closingDay: number;
+  dueDay: number;
+};
+
+export type CreditCardCharge = {
+  id: string;
+  cardId: string;
+  description: string;
+  amount: number;
+  date: string;
+  categoryId: string;
+  type: ExpenseType;
+  installments?: number;
+  currentInstallment?: number;
+  invoiceStatus: "open" | "paid";
+  invoicePaidAt?: string;
 };
 
 export type FinancePreferences = {
@@ -93,5 +117,7 @@ export type FinanceData = {
   goals: Goal[];
   goalContributions: GoalContribution[];
   savingsBuckets: SavingsBucket[];
+  creditCards: CreditCard[];
+  creditCardCharges: CreditCardCharge[];
   preferences: FinancePreferences;
 };

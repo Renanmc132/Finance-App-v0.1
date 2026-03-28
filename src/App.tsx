@@ -4,6 +4,7 @@ import { useAuth } from "./hooks/useAuth";
 import Dashboard from "./components/Dashboard";
 import EntriesPage from "./components/EntriesPage";
 import ExpensesPage from "./components/ExpensesPage";
+import CreditCardsPanel from "./components/CreditCardsPanel";
 import InstallmentsPage from "./components/InstallmentsPage";
 import AccountsPage from "./components/AccountsPage";
 import GoalsPanel from "./components/GoalsPanel";
@@ -162,6 +163,10 @@ export default function App() {
             <div className="grid gap-6 xl:grid-cols-2">
               <EntriesPage finance={finance} />
               <ExpensesPage finance={finance} />
+            </div>
+
+            <div className="grid gap-6">
+              <CreditCardsPanel finance={finance} />
             </div>
 
             <div className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">

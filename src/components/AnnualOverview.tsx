@@ -46,12 +46,24 @@ export default function AnnualOverview({
   const rows = monthLabels.map((month, index) => {
     const income = sumForMonth(finance.incomes, selectedYear, index, "income");
     const expenses = sumForMonth(finance.expenses, selectedYear, index, "expense");
-    const saved = finance.savingsBuckets.reduce((sum, bucket) => sum + bucket.amount, 0);
+    const creditExpenses = finance.creditCardCharges
+      .filter((item) => {
+        if (item.invoiceStatus !== "paid" || !item.invoicePaidAt) return false;
+        const parsed = new Date(`${item.invoicePaidAt}T12:00:00`);
+        return parsed.getFullYear() === selectedYear && parsed.getMonth() === index;
+      })
+      .reduce((sum, item) => sum + item.amount, 0);
+    const saved = finance.savingsBuckets
+      .filter((bucket) => {
+        const parsed = new Date(`${bucket.createdAt}T12:00:00`);
+        return parsed.getFullYear() === selectedYear && parsed.getMonth() === index;
+      })
+      .reduce((sum, bucket) => sum + bucket.amount, 0);
     return {
       month,
-      saldoFinal: income - expenses,
+      saldoFinal: income - expenses - creditExpenses,
       guardado: saved,
-      gastos: expenses
+      gastos: expenses + creditExpenses
     };
   });
 

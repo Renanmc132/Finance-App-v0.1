@@ -50,18 +50,30 @@ function HighlightCards({ finance, selectedMonth, selectedYear }: DashboardProps
       item.status === "paid" &&
       isInPeriod(item.paidAt ?? item.date, selectedMonth, selectedYear)
   );
+  const paidCurrentMonthCreditCharges = finance.creditCardCharges.filter(
+    (item) =>
+      item.invoiceStatus === "paid" &&
+      !!item.invoicePaidAt &&
+      isInPeriod(item.invoicePaidAt, selectedMonth, selectedYear)
+  );
   const pendingAmount = finance.expenses
     .filter((item) => item.status === "pending")
     .reduce((sum, item) => sum + item.amount, 0);
+  const pendingCreditAmount = finance.creditCardCharges
+    .filter((item) => item.invoiceStatus === "open")
+    .reduce((sum, item) => sum + item.amount, 0);
   const totalBalance = finance.accounts.reduce((sum, account) => sum + account.balance, 0);
   const incomeThisMonth = currentMonthIncomes.reduce((sum, item) => sum + item.amount, 0);
-  const expenseThisMonth = paidCurrentMonthExpenses.reduce((sum, item) => sum + item.amount, 0);
+  const expenseThisMonth =
+    paidCurrentMonthExpenses.reduce((sum, item) => sum + item.amount, 0) +
+    paidCurrentMonthCreditCharges.reduce((sum, item) => sum + item.amount, 0);
 
   const cards = [
     {
-      label: "Saldo total",
+      label: "Saldo em conta corrente",
       value: formatCurrency(totalBalance),
-      tone: "border-emerald-100 bg-emerald-50"
+      tone: "border-emerald-100 bg-emerald-50",
+      details: finance.accounts
     },
     {
       label: "Resultado do mes",
@@ -75,22 +87,51 @@ function HighlightCards({ finance, selectedMonth, selectedYear }: DashboardProps
     },
     {
       label: "Pendencias",
-      value: formatCurrency(pendingAmount),
+      value: formatCurrency(pendingAmount + pendingCreditAmount),
       tone: "border-amber-100 bg-amber-50"
     }
   ];
 
   return (
     <div className="grid gap-3 sm:grid-cols-2">
-      {cards.map((card) => (
-        <div key={card.label} className={`rounded-3xl border p-5 ${card.tone}`}>
-          <p className="text-sm text-slate-500">{card.label}</p>
-          <p className="mt-1 text-xs uppercase tracking-[0.2em] text-slate-400">
-            {monthLabels[selectedMonth]} {selectedYear}
-          </p>
-          <p className="mt-2 text-3xl font-semibold text-slate-900">{card.value}</p>
-        </div>
-      ))}
+      {cards.map((card) =>
+        card.details ? (
+          <details key={card.label} className={`rounded-3xl border p-5 ${card.tone}`}>
+            <summary className="cursor-pointer list-none">
+              <p className="text-sm text-slate-500">{card.label}</p>
+              <p className="mt-1 text-xs uppercase tracking-[0.2em] text-slate-400">
+                Clique para ver por banco
+              </p>
+              <p className="mt-2 text-3xl font-semibold text-slate-900">{card.value}</p>
+            </summary>
+            <div className="mt-4 space-y-2 border-t border-emerald-100 pt-4">
+              {card.details.length === 0 ? (
+                <p className="text-sm text-slate-500">Nenhum banco cadastrado ainda.</p>
+              ) : (
+                card.details.map((account) => (
+                  <div
+                    key={account.id}
+                    className="flex items-center justify-between rounded-2xl bg-white/70 px-4 py-3"
+                  >
+                    <span className="text-sm text-slate-600">{account.name}</span>
+                    <span className="font-medium text-slate-900">
+                      {formatCurrency(account.balance)}
+                    </span>
+                  </div>
+                ))
+              )}
+            </div>
+          </details>
+        ) : (
+          <div key={card.label} className={`rounded-3xl border p-5 ${card.tone}`}>
+            <p className="text-sm text-slate-500">{card.label}</p>
+            <p className="mt-1 text-xs uppercase tracking-[0.2em] text-slate-400">
+              {monthLabels[selectedMonth]} {selectedYear}
+            </p>
+            <p className="mt-2 text-3xl font-semibold text-slate-900">{card.value}</p>
+          </div>
+        )
+      )}
     </div>
   );
 }
@@ -101,19 +142,31 @@ function DashboardPage({ finance, selectedMonth, selectedYear }: DashboardProps)
       item.status === "paid" &&
       isInPeriod(item.paidAt ?? item.date, selectedMonth, selectedYear)
   );
+  const paidCurrentMonthCreditCharges = finance.creditCardCharges.filter(
+    (item) =>
+      item.invoiceStatus === "paid" &&
+      !!item.invoicePaidAt &&
+      isInPeriod(item.invoicePaidAt, selectedMonth, selectedYear)
+  );
   const currentMonthIncomes = finance.incomes.filter((item) =>
     isInPeriod(item.date, selectedMonth, selectedYear)
   );
   const categoryTotals = finance.categories
     .map((category) => ({
       ...category,
-      total: paidCurrentMonthExpenses
-        .filter((expense) => expense.categoryId === category.id)
-        .reduce((sum, expense) => sum + expense.amount, 0)
+      total:
+        paidCurrentMonthExpenses
+          .filter((expense) => expense.categoryId === category.id)
+          .reduce((sum, expense) => sum + expense.amount, 0) +
+        paidCurrentMonthCreditCharges
+          .filter((expense) => expense.categoryId === category.id)
+          .reduce((sum, expense) => sum + expense.amount, 0)
     }))
     .filter((item) => item.total > 0)
     .sort((a, b) => b.total - a.total);
-  const expenseThisMonth = paidCurrentMonthExpenses.reduce((sum, item) => sum + item.amount, 0);
+  const expenseThisMonth =
+    paidCurrentMonthExpenses.reduce((sum, item) => sum + item.amount, 0) +
+    paidCurrentMonthCreditCharges.reduce((sum, item) => sum + item.amount, 0);
   const incomeThisMonth = currentMonthIncomes.reduce((sum, item) => sum + item.amount, 0);
   const annualSummary = monthLabels.map((label, index) => {
     const monthIncome = finance.incomes
@@ -122,17 +175,31 @@ function DashboardPage({ finance, selectedMonth, selectedYear }: DashboardProps)
     const monthExpense = finance.expenses
       .filter((item) => item.status === "paid" && isInPeriod(item.paidAt ?? item.date, index, selectedYear))
       .reduce((sum, item) => sum + item.amount, 0);
+    const monthCreditExpense = finance.creditCardCharges
+      .filter(
+        (item) =>
+          item.invoiceStatus === "paid" &&
+          !!item.invoicePaidAt &&
+          isInPeriod(item.invoicePaidAt, index, selectedYear)
+      )
+      .reduce((sum, item) => sum + item.amount, 0);
     return {
       month: label.slice(0, 3),
       entradas: monthIncome,
-      gastos: monthExpense,
-      saldo: monthIncome - monthExpense
+      gastos: monthExpense + monthCreditExpense,
+      saldo: monthIncome - monthExpense - monthCreditExpense
     };
   });
-  const recentActivity = [...finance.incomes, ...finance.expenses]
+  const recentActivity = [
+    ...finance.incomes,
+    ...finance.expenses,
+    ...finance.creditCardCharges.filter((item) => item.invoiceStatus === "paid")
+  ]
     .sort((a, b) => {
-      const dateA = "paidAt" in a ? a.paidAt ?? a.date : a.date;
-      const dateB = "paidAt" in b ? b.paidAt ?? b.date : b.date;
+      const dateA =
+        "invoicePaidAt" in a ? a.invoicePaidAt ?? a.date : "paidAt" in a ? a.paidAt ?? a.date : a.date;
+      const dateB =
+        "invoicePaidAt" in b ? b.invoicePaidAt ?? b.date : "paidAt" in b ? b.paidAt ?? b.date : b.date;
       return dateB.localeCompare(dateA);
     })
     .slice(0, 8);
@@ -278,7 +345,8 @@ function DashboardPage({ finance, selectedMonth, selectedYear }: DashboardProps)
           ) : (
             <div className="space-y-3">
               {recentActivity.map((item) => {
-                const isExpense = "status" in item;
+                const isExpense = "status" in item || "invoiceStatus" in item;
+                const isCreditCharge = "invoiceStatus" in item;
                 return (
                   <div
                     key={item.id}
@@ -287,23 +355,33 @@ function DashboardPage({ finance, selectedMonth, selectedYear }: DashboardProps)
                     <div>
                       <p className="font-medium text-slate-900">{item.description}</p>
                       <p className="text-sm text-slate-500">
-                      {isExpense
-                        ? `${categoryName(item.categoryId)} - ${accountName(item.accountId)}`
-                        : `${accountName(item.accountId)} - entrada`}
-                    </p>
-                    {"paymentMethod" in item ? (
-                      <p className="mt-1 text-sm text-slate-500">
-                        Via {paymentMethodLabels[item.paymentMethod]}
+                        {isCreditCharge
+                          ? `${categoryName(item.categoryId)} - fatura paga`
+                          : "status" in item
+                            ? `${categoryName(item.categoryId)} - ${accountName(item.accountId)}`
+                            : `${accountName(item.accountId)} - entrada`}
                       </p>
-                    ) : null}
-                  </div>
+                      {"paymentMethod" in item ? (
+                        <p className="mt-1 text-sm text-slate-500">
+                          Via {paymentMethodLabels[item.paymentMethod]}
+                        </p>
+                      ) : isCreditCharge ? (
+                        <p className="mt-1 text-sm text-slate-500">Via cartao de credito</p>
+                      ) : null}
+                    </div>
                     <div className="text-right">
                       <p className={isExpense ? "font-medium text-rose-600" : "font-medium text-emerald-600"}>
                         {isExpense ? "-" : "+"}
                         {formatCurrency(item.amount)}
                       </p>
                       <p className="text-sm text-slate-500">
-                        {formatDate("paidAt" in item ? item.paidAt ?? item.date : item.date)}
+                        {formatDate(
+                          "invoicePaidAt" in item
+                            ? item.invoicePaidAt ?? item.date
+                            : "paidAt" in item
+                              ? item.paidAt ?? item.date
+                              : item.date
+                        )}
                       </p>
                     </div>
                   </div>
