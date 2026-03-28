@@ -50,49 +50,42 @@ function HighlightCards({ finance, selectedMonth, selectedYear }: DashboardProps
       item.status === "paid" &&
       isInPeriod(item.paidAt ?? item.date, selectedMonth, selectedYear)
   );
-  const paidCurrentMonthCreditCharges = finance.creditCardCharges.filter(
-    (item) =>
-      item.invoiceStatus === "paid" &&
-      !!item.invoicePaidAt &&
-      isInPeriod(item.invoicePaidAt, selectedMonth, selectedYear)
-  );
   const pendingAmount = finance.expenses
     .filter((item) => item.status === "pending")
     .reduce((sum, item) => sum + item.amount, 0);
   const pendingCreditAmount = finance.creditCardCharges
-    .filter((item) => item.invoiceStatus === "open")
-    .reduce((sum, item) => sum + item.amount, 0);
+    .filter((item) => item.paidInstallments < item.installments)
+    .reduce((sum, item) => sum + item.amount / Math.max(item.installments, 1), 0);
+  const paidCurrentMonthCreditPayments = finance.creditCardPayments.filter((item) =>
+    isInPeriod(item.paidAt, selectedMonth, selectedYear)
+  );
   const totalBalance = finance.accounts.reduce((sum, account) => sum + account.balance, 0);
   const incomeThisMonth = currentMonthIncomes.reduce((sum, item) => sum + item.amount, 0);
   const expenseThisMonth =
     paidCurrentMonthExpenses.reduce((sum, item) => sum + item.amount, 0) +
-    paidCurrentMonthCreditCharges.reduce((sum, item) => sum + item.amount, 0);
+    paidCurrentMonthCreditPayments.reduce((sum, item) => sum + item.amount, 0);
 
   const cards = [
     {
       label: "Saldo em conta corrente",
       value: formatCurrency(totalBalance),
       tone: "border-emerald-100 bg-emerald-50",
-      details: finance.accounts,
-      caption: "Saldo somado de todos os bancos"
+      details: finance.accounts
     },
     {
       label: "Resultado do mes",
       value: formatCurrency(incomeThisMonth - expenseThisMonth),
-      tone: "border-sky-100 bg-sky-50",
-      caption: "Entradas do mes menos gastos pagos"
+      tone: "border-sky-100 bg-sky-50"
     },
     {
       label: "Entradas do mes",
       value: formatCurrency(incomeThisMonth),
-      tone: "border-cyan-100 bg-cyan-50",
-      caption: "Tudo o que entrou no periodo"
+      tone: "border-cyan-100 bg-cyan-50"
     },
     {
       label: "Pendencias",
       value: formatCurrency(pendingAmount + pendingCreditAmount),
-      tone: "border-amber-100 bg-amber-50",
-      caption: "Gastos e faturas ainda em aberto"
+      tone: "border-amber-100 bg-amber-50"
     }
   ];
 
@@ -104,7 +97,7 @@ function HighlightCards({ finance, selectedMonth, selectedYear }: DashboardProps
             <summary className="cursor-pointer list-none">
               <p className="text-sm text-slate-500">{card.label}</p>
               <p className="mt-1 text-xs uppercase tracking-[0.2em] text-slate-400">
-                {card.caption}
+                Clique para ver por banco
               </p>
               <p className="mt-2 text-3xl font-semibold text-slate-900">{card.value}</p>
             </summary>
@@ -130,9 +123,6 @@ function HighlightCards({ finance, selectedMonth, selectedYear }: DashboardProps
           <div key={card.label} className={`rounded-3xl border p-5 ${card.tone}`}>
             <p className="text-sm text-slate-500">{card.label}</p>
             <p className="mt-1 text-xs uppercase tracking-[0.2em] text-slate-400">
-              {card.caption}
-            </p>
-            <p className="mt-1 text-xs text-slate-400">
               {monthLabels[selectedMonth]} {selectedYear}
             </p>
             <p className="mt-2 text-3xl font-semibold text-slate-900">{card.value}</p>
@@ -149,11 +139,8 @@ function DashboardPage({ finance, selectedMonth, selectedYear }: DashboardProps)
       item.status === "paid" &&
       isInPeriod(item.paidAt ?? item.date, selectedMonth, selectedYear)
   );
-  const paidCurrentMonthCreditCharges = finance.creditCardCharges.filter(
-    (item) =>
-      item.invoiceStatus === "paid" &&
-      !!item.invoicePaidAt &&
-      isInPeriod(item.invoicePaidAt, selectedMonth, selectedYear)
+  const paidCurrentMonthCreditPayments = finance.creditCardPayments.filter((item) =>
+    isInPeriod(item.paidAt, selectedMonth, selectedYear)
   );
   const currentMonthIncomes = finance.incomes.filter((item) =>
     isInPeriod(item.date, selectedMonth, selectedYear)
@@ -165,7 +152,7 @@ function DashboardPage({ finance, selectedMonth, selectedYear }: DashboardProps)
         paidCurrentMonthExpenses
           .filter((expense) => expense.categoryId === category.id)
           .reduce((sum, expense) => sum + expense.amount, 0) +
-        paidCurrentMonthCreditCharges
+        paidCurrentMonthCreditPayments
           .filter((expense) => expense.categoryId === category.id)
           .reduce((sum, expense) => sum + expense.amount, 0)
     }))
@@ -173,7 +160,7 @@ function DashboardPage({ finance, selectedMonth, selectedYear }: DashboardProps)
     .sort((a, b) => b.total - a.total);
   const expenseThisMonth =
     paidCurrentMonthExpenses.reduce((sum, item) => sum + item.amount, 0) +
-    paidCurrentMonthCreditCharges.reduce((sum, item) => sum + item.amount, 0);
+    paidCurrentMonthCreditPayments.reduce((sum, item) => sum + item.amount, 0);
   const incomeThisMonth = currentMonthIncomes.reduce((sum, item) => sum + item.amount, 0);
   const annualSummary = monthLabels.map((label, index) => {
     const monthIncome = finance.incomes
@@ -182,13 +169,8 @@ function DashboardPage({ finance, selectedMonth, selectedYear }: DashboardProps)
     const monthExpense = finance.expenses
       .filter((item) => item.status === "paid" && isInPeriod(item.paidAt ?? item.date, index, selectedYear))
       .reduce((sum, item) => sum + item.amount, 0);
-    const monthCreditExpense = finance.creditCardCharges
-      .filter(
-        (item) =>
-          item.invoiceStatus === "paid" &&
-          !!item.invoicePaidAt &&
-          isInPeriod(item.invoicePaidAt, index, selectedYear)
-      )
+    const monthCreditExpense = finance.creditCardPayments
+      .filter((item) => isInPeriod(item.paidAt, index, selectedYear))
       .reduce((sum, item) => sum + item.amount, 0);
     return {
       month: label.slice(0, 3),
@@ -200,13 +182,13 @@ function DashboardPage({ finance, selectedMonth, selectedYear }: DashboardProps)
   const recentActivity = [
     ...finance.incomes,
     ...finance.expenses,
-    ...finance.creditCardCharges.filter((item) => item.invoiceStatus === "paid")
+    ...finance.creditCardPayments
   ]
     .sort((a, b) => {
       const dateA =
-        "invoicePaidAt" in a ? a.invoicePaidAt ?? a.date : "paidAt" in a ? a.paidAt ?? a.date : a.date;
+        "installmentNumber" in a ? a.paidAt : "paidAt" in a ? a.paidAt ?? a.date : a.date;
       const dateB =
-        "invoicePaidAt" in b ? b.invoicePaidAt ?? b.date : "paidAt" in b ? b.paidAt ?? b.date : b.date;
+        "installmentNumber" in b ? b.paidAt : "paidAt" in b ? b.paidAt ?? b.date : b.date;
       return dateB.localeCompare(dateA);
     })
     .slice(0, 8);
@@ -352,8 +334,8 @@ function DashboardPage({ finance, selectedMonth, selectedYear }: DashboardProps)
           ) : (
             <div className="space-y-3">
               {recentActivity.map((item) => {
-                const isExpense = "status" in item || "invoiceStatus" in item;
-                const isCreditCharge = "invoiceStatus" in item;
+                const isExpense = "status" in item || "installmentNumber" in item;
+                const isCreditCharge = "installmentNumber" in item;
                 return (
                   <div
                     key={item.id}
@@ -363,7 +345,7 @@ function DashboardPage({ finance, selectedMonth, selectedYear }: DashboardProps)
                       <p className="font-medium text-slate-900">{item.description}</p>
                       <p className="text-sm text-slate-500">
                         {isCreditCharge
-                          ? `${categoryName(item.categoryId)} - fatura paga`
+                          ? `${categoryName(item.categoryId)} - fatura do cartao`
                           : "status" in item
                             ? `${categoryName(item.categoryId)} - ${accountName(item.accountId)}`
                             : `${accountName(item.accountId)} - entrada`}
@@ -383,8 +365,8 @@ function DashboardPage({ finance, selectedMonth, selectedYear }: DashboardProps)
                       </p>
                       <p className="text-sm text-slate-500">
                         {formatDate(
-                          "invoicePaidAt" in item
-                            ? item.invoicePaidAt ?? item.date
+                          "installmentNumber" in item
+                            ? item.paidAt
                             : "paidAt" in item
                               ? item.paidAt ?? item.date
                               : item.date

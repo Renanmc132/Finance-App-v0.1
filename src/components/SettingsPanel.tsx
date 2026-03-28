@@ -4,6 +4,11 @@ import { Panel } from "./financeUi";
 export default function SettingsPanel({ finance }: { finance: FinanceStore }) {
   const groups = [
     {
+      title: "Tipos de entrada",
+      key: "incomeTypeLabels" as const,
+      items: finance.preferences.incomeTypeLabels
+    },
+    {
       title: "Tipos de gasto",
       key: "expenseTypeLabels" as const,
       items: finance.preferences.expenseTypeLabels

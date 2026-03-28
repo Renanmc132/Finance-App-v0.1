@@ -49,10 +49,8 @@ export default function DashboardsPage({
   const yearSet = new Set<number>();
   finance.incomes.forEach((item) => yearSet.add(getIncomeDate(item.date).getFullYear()));
   finance.expenses.forEach((item) => yearSet.add(getExpenseDate(item.date, item.paidAt).getFullYear()));
-  finance.creditCardCharges.forEach((item) => {
-    if (item.invoicePaidAt) {
-      yearSet.add(getCreditChargeDate(item.invoicePaidAt).getFullYear());
-    }
+  finance.creditCardPayments.forEach((item) => {
+    yearSet.add(getCreditChargeDate(item.paidAt).getFullYear());
   });
   yearSet.add(selectedYear);
 
@@ -65,8 +63,8 @@ export default function DashboardsPage({
       const expense = finance.expenses
         .filter((item) => item.status === "paid" && getExpenseDate(item.date, item.paidAt).getFullYear() === year)
         .reduce((sum, item) => sum + item.amount, 0);
-      const creditExpense = finance.creditCardCharges
-        .filter((item) => item.invoiceStatus === "paid" && item.invoicePaidAt && getCreditChargeDate(item.invoicePaidAt).getFullYear() === year)
+      const creditExpense = finance.creditCardPayments
+        .filter((item) => getCreditChargeDate(item.paidAt).getFullYear() === year)
         .reduce((sum, item) => sum + item.amount, 0);
       return {
         year: String(year),
@@ -90,10 +88,9 @@ export default function DashboardsPage({
         return date.getFullYear() === selectedYear && date.getMonth() === index;
       })
       .reduce((sum, item) => sum + item.amount, 0);
-    const creditExpense = finance.creditCardCharges
+    const creditExpense = finance.creditCardPayments
       .filter((item) => {
-        if (item.invoiceStatus !== "paid" || !item.invoicePaidAt) return false;
-        const date = getCreditChargeDate(item.invoicePaidAt);
+        const date = getCreditChargeDate(item.paidAt);
         return date.getFullYear() === selectedYear && date.getMonth() === index;
       })
       .reduce((sum, item) => sum + item.amount, 0);
@@ -120,14 +117,13 @@ export default function DashboardsPage({
           return expense.accountId === account.id && date.getFullYear() === selectedYear;
         })
         .reduce((sum, expense) => sum + expense.amount, 0) +
-        finance.creditCardCharges
-          .filter((charge) => {
-            if (charge.invoiceStatus !== "paid" || !charge.invoicePaidAt) return false;
-            const card = finance.creditCards.find((item) => item.id === charge.cardId);
-            const date = getCreditChargeDate(charge.invoicePaidAt);
+        finance.creditCardPayments
+          .filter((payment) => {
+            const card = finance.creditCards.find((item) => item.id === payment.cardId);
+            const date = getCreditChargeDate(payment.paidAt);
             return card?.accountId === account.id && date.getFullYear() === selectedYear;
           })
-          .reduce((sum, charge) => sum + charge.amount, 0);
+          .reduce((sum, payment) => sum + payment.amount, 0);
       return {
         name: account.name,
         total
@@ -140,25 +136,25 @@ export default function DashboardsPage({
 
   const paymentMethodData = Object.entries(paymentMethodLabels)
     .map(([method, label]) => {
-      const total = finance.expenses
+      const regularTotal = finance.expenses
         .filter((expense) => {
           if (expense.status !== "paid") return false;
           const date = getExpenseDate(expense.date, expense.paidAt);
           return expense.paymentMethod === method && date.getFullYear() === selectedYear;
         })
-        .reduce((sum, expense) => sum + expense.amount, 0) +
-        (method === "credit"
-          ? finance.creditCardCharges
+        .reduce((sum, expense) => sum + expense.amount, 0);
+      const creditTotal =
+        method === "credit"
+          ? finance.creditCardPayments
               .filter((charge) => {
-                if (charge.invoiceStatus !== "paid" || !charge.invoicePaidAt) return false;
-                const date = getCreditChargeDate(charge.invoicePaidAt);
+                const date = getCreditChargeDate(charge.paidAt);
                 return date.getFullYear() === selectedYear;
               })
               .reduce((sum, charge) => sum + charge.amount, 0)
-          : 0);
+          : 0;
       return {
         name: label,
-        total
+        total: regularTotal + creditTotal
       };
     })
     .filter((item) => item.total > 0)
@@ -173,10 +169,9 @@ export default function DashboardsPage({
           return expense.categoryId === category.id && date.getFullYear() === selectedYear;
         })
         .reduce((sum, expense) => sum + expense.amount, 0) +
-        finance.creditCardCharges
+        finance.creditCardPayments
           .filter((charge) => {
-            if (charge.invoiceStatus !== "paid" || !charge.invoicePaidAt) return false;
-            const date = getCreditChargeDate(charge.invoicePaidAt);
+            const date = getCreditChargeDate(charge.paidAt);
             return charge.categoryId === category.id && date.getFullYear() === selectedYear;
           })
           .reduce((sum, charge) => sum + charge.amount, 0);

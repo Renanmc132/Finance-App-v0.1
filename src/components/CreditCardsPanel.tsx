@@ -174,9 +174,7 @@ export default function CreditCardsPanel({ finance }: { finance: FinanceStore })
                     date: chargeForm.date,
                     categoryId: chargeForm.categoryId,
                     type: chargeForm.type,
-                    installments: Number(chargeForm.installments || 1),
-                    currentInstallment:
-                      Number(chargeForm.installments || 1) > 1 ? 1 : undefined
+                    installments: Number(chargeForm.installments || 1)
                   });
                   setChargeForm((prev) => ({
                     ...prev,
@@ -201,13 +199,28 @@ export default function CreditCardsPanel({ finance }: { finance: FinanceStore })
           <div className="space-y-4">
             {finance.creditCards.map((card) => {
               const openCharges = finance.creditCardCharges.filter(
-                (charge) => charge.cardId === card.id && charge.invoiceStatus === "open"
+                (charge) => charge.cardId === card.id && charge.paidInstallments < charge.installments
               );
-              const paidCharges = finance.creditCardCharges.filter(
-                (charge) => charge.cardId === card.id && charge.invoiceStatus === "paid"
+              const paidCharges = finance.creditCardPayments.filter(
+                (charge) => charge.cardId === card.id
               );
-              const openTotal = openCharges.reduce((sum, charge) => sum + charge.amount, 0);
-              const availableLimit = card.limitAmount - openTotal;
+              const currentInvoiceTotal = openCharges.reduce(
+                (sum, charge) => sum + charge.amount / Math.max(charge.installments, 1),
+                0
+              );
+              const usedLimit = finance.creditCardCharges
+                .filter((charge) => charge.cardId === card.id)
+                .reduce(
+                  (sum, charge) =>
+                    sum +
+                    Math.max(
+                      0,
+                      charge.amount -
+                        (charge.amount / Math.max(charge.installments, 1)) * charge.paidInstallments
+                    ),
+                  0
+                );
+              const availableLimit = card.limitAmount - usedLimit;
 
               return (
                 <div
@@ -230,9 +243,9 @@ export default function CreditCardsPanel({ finance }: { finance: FinanceStore })
                         </p>
                       </div>
                       <div className="rounded-2xl border border-amber-100 bg-amber-50 px-4 py-3">
-                        <p className="text-xs uppercase tracking-[0.2em] text-amber-700">Em aberto</p>
+                        <p className="text-xs uppercase tracking-[0.2em] text-amber-700">Fatura atual</p>
                         <p className="mt-1 font-semibold text-slate-900">
-                          {formatCurrency(openTotal)}
+                          {formatCurrency(currentInvoiceTotal)}
                         </p>
                       </div>
                       <div className="rounded-2xl border border-emerald-100 bg-emerald-50 px-4 py-3">
@@ -270,15 +283,18 @@ export default function CreditCardsPanel({ finance }: { finance: FinanceStore })
                                 <p className="text-sm text-slate-500">
                                   {categoryName(charge.categoryId)} - {formatDate(charge.date)}
                                 </p>
-                                {charge.installments && charge.installments > 1 ? (
+                                {charge.installments > 1 ? (
                                   <p className="mt-1 text-sm text-slate-500">
-                                    Parcela {charge.currentInstallment}/{charge.installments}
+                                    Parcela {charge.paidInstallments + 1}/{charge.installments}
                                   </p>
                                 ) : null}
                               </div>
                               <div className="text-right">
                                 <p className="font-semibold text-rose-600">
-                                  {formatCurrency(charge.amount)}
+                                  {formatCurrency(charge.amount / Math.max(charge.installments, 1))}
+                                </p>
+                                <p className="mt-1 text-xs text-slate-500">
+                                  Compra total {formatCurrency(charge.amount)}
                                 </p>
                                 <button
                                   onClick={() => finance.removeCreditCardCharge(charge.id)}
@@ -315,7 +331,7 @@ export default function CreditCardsPanel({ finance }: { finance: FinanceStore })
                               <div>
                                 <p className="font-medium text-slate-900">{charge.description}</p>
                                 <p className="text-sm text-slate-500">
-                                  Pago na fatura de {formatDate(charge.invoicePaidAt)}
+                                  Parcela {charge.installmentNumber} paga em {formatDate(charge.paidAt)}
                                 </p>
                               </div>
                               <p className="font-semibold text-slate-900">

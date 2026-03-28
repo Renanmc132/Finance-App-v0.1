@@ -6,6 +6,7 @@ import {
   Category,
   CreditCard,
   CreditCardCharge,
+  CreditCardPayment,
   Expense,
   ExpenseStatus,
   ExpenseType,
@@ -16,12 +17,12 @@ import {
   IncomeType,
   InstallmentPlan,
   PaymentMethod,
+  SavingsMovement,
   SavingsBucket
 } from "../types/finance";
 import { supabase } from "../lib/supabase";
 
 const STORAGE_KEY = "finance-app-v2";
-const MAX_SHORT_LABEL_LENGTH = 32;
 
 const defaultCategories: Category[] = [
   { id: uuidv4(), name: "Moradia", color: "#f97316" },
@@ -33,6 +34,12 @@ const defaultCategories: Category[] = [
 
 const defaultAccounts: Account[] = [];
 const defaultPreferences = {
+  incomeTypeLabels: {
+    salary: "Salario",
+    bonus: "Bonus",
+    pix: "Pix recebido",
+    other: "Outro"
+  },
   expenseTypeLabels: {
     expense: "Gasto variavel",
     fixed: "Gasto fixo",
@@ -61,8 +68,10 @@ const initialState: FinanceData = {
   goals: [],
   goalContributions: [],
   savingsBuckets: [],
+  savingsMovements: [],
   creditCards: [],
   creditCardCharges: [],
+  creditCardPayments: [],
   preferences: defaultPreferences
 };
 
@@ -141,17 +150,20 @@ type AddCreditCardChargeInput = {
   categoryId: string;
   type: ExpenseType;
   installments?: number;
-  currentInstallment?: number;
+};
+
+type MoveSavingsInput = {
+  bucketId: string;
+  accountId: string;
+  amount: number;
+  date: string;
+  type: "deposit" | "withdrawal";
 };
 
 function normalizeAccountType(type?: string): Account["type"] {
   if (type === "wallet") return "wallet";
   if (type === "card" || type === "credit") return "card";
   return "account";
-}
-
-function normalizeShortLabel(value: string) {
-  return value.trim().slice(0, MAX_SHORT_LABEL_LENGTH).trim();
 }
 
 function parseStoredFinance(data: string): FinanceData {
@@ -198,9 +210,31 @@ function parseStoredFinance(data: string): FinanceData {
         ...bucket,
         createdAt: bucket.createdAt ?? new Date().toISOString().slice(0, 10)
       })),
+      savingsMovements: parsed.savingsMovements ?? [],
       creditCards: parsed.creditCards ?? [],
-      creditCardCharges: parsed.creditCardCharges ?? [],
+      creditCardCharges: (parsed.creditCardCharges ?? []).map((charge) => {
+        const legacyCharge = charge as CreditCardCharge & {
+          currentInstallment?: number;
+          invoicePaidAt?: string;
+        };
+
+        return {
+          ...charge,
+          installments: charge.installments ?? 1,
+          paidInstallments:
+            charge.paidInstallments ??
+            (charge.invoiceStatus === "paid"
+              ? charge.installments ?? 1
+              : Math.max(0, (legacyCharge.currentInstallment ?? 1) - 1)),
+          lastPaidAt: charge.lastPaidAt ?? legacyCharge.invoicePaidAt
+        };
+      }),
+      creditCardPayments: parsed.creditCardPayments ?? [],
       preferences: {
+        incomeTypeLabels: {
+          ...defaultPreferences.incomeTypeLabels,
+          ...parsed.preferences?.incomeTypeLabels
+        },
         expenseTypeLabels: {
           ...defaultPreferences.expenseTypeLabels,
           ...parsed.preferences?.expenseTypeLabels
@@ -294,8 +328,7 @@ export function useFinance(session?: Session | null) {
   }, [finance, ready, session?.user?.id]);
 
   function addAccount({ name, type, initialBalance = 0 }: AddAccountInput) {
-    const normalizedName = normalizeShortLabel(name);
-    if (!normalizedName) return;
+    if (!name.trim()) return;
 
     setFinance((prev) => ({
       ...prev,
@@ -303,7 +336,7 @@ export function useFinance(session?: Session | null) {
         ...prev.accounts,
         {
           id: uuidv4(),
-          name: normalizedName,
+          name: name.trim(),
           type,
           balance: initialBalance
         }
@@ -312,32 +345,40 @@ export function useFinance(session?: Session | null) {
   }
 
   function removeAccount(id: string) {
-    setFinance((prev) => ({
-      ...prev,
-      accounts: prev.accounts.filter((account) => account.id !== id),
-      incomes: prev.incomes.filter((income) => income.accountId !== id),
-      expenses: prev.expenses.filter((expense) => expense.accountId !== id),
-      installmentPlans: prev.installmentPlans.filter((plan) => plan.accountId !== id),
-      creditCards: prev.creditCards.filter((card) => card.accountId !== id),
-      creditCardCharges: prev.creditCardCharges.filter((charge) => {
-        const card = prev.creditCards.find((item) => item.id === charge.cardId);
-        return card?.accountId !== id;
-      }),
-      savingsBuckets: prev.savingsBuckets.map((bucket) =>
-        bucket.accountId === id ? { ...bucket, accountId: undefined } : bucket
-      )
-    }));
+    setFinance((prev) => {
+      const removedCardIds = prev.creditCards
+        .filter((card) => card.accountId === id)
+        .map((card) => card.id);
+
+      return {
+        ...prev,
+        accounts: prev.accounts.filter((account) => account.id !== id),
+        incomes: prev.incomes.filter((income) => income.accountId !== id),
+        expenses: prev.expenses.filter((expense) => expense.accountId !== id),
+        installmentPlans: prev.installmentPlans.filter((plan) => plan.accountId !== id),
+        creditCards: prev.creditCards.filter((card) => card.accountId !== id),
+        creditCardCharges: prev.creditCardCharges.filter(
+          (charge) => !removedCardIds.includes(charge.cardId)
+        ),
+        creditCardPayments: prev.creditCardPayments.filter(
+          (payment) => !removedCardIds.includes(payment.cardId)
+        ),
+        savingsBuckets: prev.savingsBuckets.map((bucket) =>
+          bucket.accountId === id ? { ...bucket, accountId: undefined } : bucket
+        ),
+        savingsMovements: prev.savingsMovements.filter((movement) => movement.accountId !== id)
+      };
+    });
   }
 
   function addCategory(name: string, color: string) {
-    const normalizedName = normalizeShortLabel(name);
-    if (!normalizedName) return;
+    if (!name.trim()) return;
 
     setFinance((prev) => ({
       ...prev,
       categories: [
         ...prev.categories,
-        { id: uuidv4(), name: normalizedName, color }
+        { id: uuidv4(), name: name.trim(), color }
       ]
     }));
   }
@@ -347,7 +388,9 @@ export function useFinance(session?: Session | null) {
       ...prev,
       categories: prev.categories.filter((category) => category.id !== id),
       expenses: prev.expenses.filter((expense) => expense.categoryId !== id),
-      installmentPlans: prev.installmentPlans.filter((plan) => plan.categoryId !== id)
+      installmentPlans: prev.installmentPlans.filter((plan) => plan.categoryId !== id),
+      creditCardCharges: prev.creditCardCharges.filter((charge) => charge.categoryId !== id),
+      creditCardPayments: prev.creditCardPayments.filter((payment) => payment.categoryId !== id)
     }));
   }
 
@@ -470,9 +513,8 @@ export function useFinance(session?: Session | null) {
   }
 
   function addInstallmentPlan(input: AddInstallmentPlanInput) {
-    const normalizedTitle = normalizeShortLabel(input.title);
     if (
-      !normalizedTitle ||
+      !input.title.trim() ||
       !input.accountId ||
       !input.categoryId ||
       !input.totalInstallments ||
@@ -483,7 +525,7 @@ export function useFinance(session?: Session | null) {
 
     const plan: InstallmentPlan = {
       id: uuidv4(),
-      title: normalizedTitle,
+      title: input.title.trim(),
       totalInstallments: input.totalInstallments,
       paidInstallments: 0,
       installmentAmount: input.installmentAmount,
@@ -699,8 +741,68 @@ export function useFinance(session?: Session | null) {
   function removeSavingsBucket(id: string) {
     setFinance((prev) => ({
       ...prev,
-      savingsBuckets: prev.savingsBuckets.filter((bucket) => bucket.id !== id)
+      savingsBuckets: prev.savingsBuckets.filter((bucket) => bucket.id !== id),
+      savingsMovements: prev.savingsMovements.filter((movement) => movement.bucketId !== id)
     }));
+  }
+
+  function updateSavingsBucket(id: string, updates: Partial<Pick<SavingsBucket, "name" | "type" | "accountId">>) {
+    setFinance((prev) => ({
+      ...prev,
+      savingsBuckets: prev.savingsBuckets.map((bucket) =>
+        bucket.id === id ? { ...bucket, ...updates } : bucket
+      )
+    }));
+  }
+
+  function moveSavings(input: MoveSavingsInput) {
+    if (!input.bucketId || !input.accountId || !input.amount || input.amount < 0) {
+      return;
+    }
+
+    setFinance((prev) => {
+      const bucket = prev.savingsBuckets.find((item) => item.id === input.bucketId);
+      if (!bucket) return prev;
+      if (input.type === "withdrawal" && bucket.amount < input.amount) {
+        return prev;
+      }
+
+      const movement: SavingsMovement = {
+        id: uuidv4(),
+        bucketId: input.bucketId,
+        accountId: input.accountId,
+        amount: input.amount,
+        date: input.date,
+        type: input.type
+      };
+
+      return {
+        ...prev,
+        savingsMovements: [movement, ...prev.savingsMovements],
+        savingsBuckets: prev.savingsBuckets.map((item) =>
+          item.id === input.bucketId
+            ? {
+                ...item,
+                amount:
+                  input.type === "deposit"
+                    ? item.amount + input.amount
+                    : item.amount - input.amount
+              }
+            : item
+        ),
+        accounts: prev.accounts.map((account) =>
+          account.id === input.accountId
+            ? {
+                ...account,
+                balance:
+                  input.type === "deposit"
+                    ? account.balance - input.amount
+                    : account.balance + input.amount
+              }
+            : account
+        )
+      };
+    });
   }
 
   function addCreditCard(input: AddCreditCardInput) {
@@ -724,11 +826,26 @@ export function useFinance(session?: Session | null) {
   }
 
   function removeCreditCard(id: string) {
-    setFinance((prev) => ({
-      ...prev,
-      creditCards: prev.creditCards.filter((card) => card.id !== id),
-      creditCardCharges: prev.creditCardCharges.filter((charge) => charge.cardId !== id)
-    }));
+    setFinance((prev) => {
+      const card = prev.creditCards.find((item) => item.id === id);
+      if (!card) return prev;
+
+      const refundedAmount = prev.creditCardPayments
+        .filter((payment) => payment.cardId === id)
+        .reduce((sum, payment) => sum + payment.amount, 0);
+
+      return {
+        ...prev,
+        creditCards: prev.creditCards.filter((creditCard) => creditCard.id !== id),
+        creditCardCharges: prev.creditCardCharges.filter((charge) => charge.cardId !== id),
+        creditCardPayments: prev.creditCardPayments.filter((payment) => payment.cardId !== id),
+        accounts: prev.accounts.map((account) =>
+          account.id === card.accountId
+            ? { ...account, balance: account.balance + refundedAmount }
+            : account
+        )
+      };
+    });
   }
 
   function addCreditCardCharge(input: AddCreditCardChargeInput) {
@@ -744,8 +861,8 @@ export function useFinance(session?: Session | null) {
       date: input.date,
       categoryId: input.categoryId,
       type: input.type,
-      installments: input.installments,
-      currentInstallment: input.currentInstallment,
+      installments: Math.max(1, input.installments ?? 1),
+      paidInstallments: 0,
       invoiceStatus: "open"
     };
 
@@ -761,20 +878,42 @@ export function useFinance(session?: Session | null) {
       if (!card) return prev;
 
       const openCharges = prev.creditCardCharges.filter(
-        (charge) => charge.cardId === cardId && charge.invoiceStatus === "open"
+        (charge) => charge.cardId === cardId && charge.paidInstallments < charge.installments
       );
 
       if (openCharges.length === 0) {
         return prev;
       }
 
-      const totalInvoice = openCharges.reduce((sum, charge) => sum + charge.amount, 0);
+      const totalInvoice = openCharges.reduce(
+        (sum, charge) => sum + charge.amount / Math.max(charge.installments, 1),
+        0
+      );
 
       return {
         ...prev,
+        creditCardPayments: [
+          ...openCharges.map((charge) => ({
+            id: uuidv4(),
+            chargeId: charge.id,
+            cardId: charge.cardId,
+            categoryId: charge.categoryId,
+            description: charge.description,
+            amount: charge.amount / Math.max(charge.installments, 1),
+            paidAt,
+            installmentNumber: charge.paidInstallments + 1
+          })),
+          ...prev.creditCardPayments
+        ],
         creditCardCharges: prev.creditCardCharges.map((charge) =>
-          charge.cardId === cardId && charge.invoiceStatus === "open"
-            ? { ...charge, invoiceStatus: "paid", invoicePaidAt: paidAt }
+          charge.cardId === cardId && charge.paidInstallments < charge.installments
+            ? {
+                ...charge,
+                paidInstallments: charge.paidInstallments + 1,
+                invoiceStatus:
+                  charge.paidInstallments + 1 >= charge.installments ? "paid" : "open",
+                lastPaidAt: paidAt
+              }
             : charge
         ),
         accounts: prev.accounts.map((account) =>
@@ -787,10 +926,28 @@ export function useFinance(session?: Session | null) {
   }
 
   function removeCreditCardCharge(id: string) {
-    setFinance((prev) => ({
-      ...prev,
-      creditCardCharges: prev.creditCardCharges.filter((charge) => charge.id !== id)
-    }));
+    setFinance((prev) => {
+      const charge = prev.creditCardCharges.find((item) => item.id === id);
+      if (!charge) return prev;
+
+      const card = prev.creditCards.find((item) => item.id === charge.cardId);
+      const relatedPayments = prev.creditCardPayments.filter((payment) => payment.chargeId === id);
+      const refundedAmount = relatedPayments.reduce((sum, payment) => sum + payment.amount, 0);
+
+      return {
+        ...prev,
+        creditCardCharges: prev.creditCardCharges.filter((item) => item.id !== id),
+        creditCardPayments: prev.creditCardPayments.filter((payment) => payment.chargeId !== id),
+        accounts:
+          card && refundedAmount > 0
+            ? prev.accounts.map((account) =>
+                account.id === card.accountId
+                  ? { ...account, balance: account.balance + refundedAmount }
+                  : account
+              )
+            : prev.accounts
+      };
+    });
   }
 
   function exportData() {
@@ -803,7 +960,7 @@ export function useFinance(session?: Session | null) {
   }
 
   function updatePreferenceLabel(
-    group: "expenseTypeLabels" | "expenseStatusLabels" | "paymentMethodLabels",
+    group: "incomeTypeLabels" | "expenseTypeLabels" | "expenseStatusLabels" | "paymentMethodLabels",
     key: string,
     value: string
   ) {
@@ -841,7 +998,9 @@ export function useFinance(session?: Session | null) {
     updateGoalContribution,
     removeGoalContribution,
     addSavingsBucket,
+    updateSavingsBucket,
     removeSavingsBucket,
+    moveSavings,
     addCreditCard,
     removeCreditCard,
     addCreditCardCharge,

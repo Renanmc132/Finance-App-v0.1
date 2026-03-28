@@ -2,13 +2,6 @@ import { useState } from "preact/hooks";
 import { FinanceStore } from "../hooks/useFinance";
 import { EmptyState, Panel, SelectInput, TextInput, formatCurrency, formatDate, today } from "./financeUi";
 
-const incomeTypeOptions = [
-  { value: "salary", label: "Salario" },
-  { value: "bonus", label: "Bonus" },
-  { value: "pix", label: "Pix recebido" },
-  { value: "other", label: "Outro" }
-] as const;
-
 export default function EntriesPage({ finance }: { finance: FinanceStore }) {
   const [form, setForm] = useState({
     description: "",
@@ -17,6 +10,7 @@ export default function EntriesPage({ finance }: { finance: FinanceStore }) {
     accountId: finance.accounts[0]?.id ?? "",
     type: "salary" as const
   });
+  const incomeTypeLabels = finance.preferences.incomeTypeLabels;
 
   return (
     <div className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
@@ -27,7 +21,7 @@ export default function EntriesPage({ finance }: { finance: FinanceStore }) {
             placeholder="Ex.: Salario, bonus, Pix da Maria"
             onInput={(description) => setForm((prev) => ({ ...prev, description }))}
           />
-          <div className="grid gap-3 md:grid-cols-2">
+          <div className="grid gap-3 sm:grid-cols-2">
             <TextInput
               value={form.amount}
               placeholder="Valor"
@@ -41,14 +35,14 @@ export default function EntriesPage({ finance }: { finance: FinanceStore }) {
               onInput={(date) => setForm((prev) => ({ ...prev, date }))}
             />
           </div>
-          <div className="grid gap-3 md:grid-cols-2">
+          <div className="grid gap-3 sm:grid-cols-2">
             <SelectInput
               value={form.type}
               onChange={(type) => setForm((prev) => ({ ...prev, type: type as typeof prev.type }))}
             >
-              {incomeTypeOptions.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
+              {Object.entries(incomeTypeLabels).map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
                 </option>
               ))}
             </SelectInput>
@@ -89,26 +83,24 @@ export default function EntriesPage({ finance }: { finance: FinanceStore }) {
             {finance.incomes.map((income) => (
               <div
                 key={income.id}
-                className="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between"
+                className="flex items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-slate-50 p-4"
               >
-                <div className="min-w-0 flex-1">
-                  <p className="font-medium text-slate-900 [overflow-wrap:anywhere]">
-                    {income.description}
-                  </p>
+                <div>
+                  <p className="font-medium text-slate-900">{income.description}</p>
                   <p className="text-sm text-slate-500">
                     {finance.accounts.find((account) => account.id === income.accountId)?.name} -{" "}
                     {formatDate(income.date)}
                   </p>
                 </div>
-                <div className="sm:text-right">
+                <div className="text-right">
                   <p className="font-medium text-emerald-600">{formatCurrency(income.amount)}</p>
                   <p className="text-sm text-slate-500">
-                    {incomeTypeOptions.find((item) => item.value === income.type)?.label}
+                    {incomeTypeLabels[income.type]}
                   </p>
                 </div>
                 <button
                   onClick={() => finance.removeIncome(income.id)}
-                  className="w-full rounded-full border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-medium text-rose-700 sm:w-auto"
+                  className="rounded-full border border-rose-200 bg-rose-50 px-3 py-1 text-xs font-medium text-rose-700"
                 >
                   Excluir
                 </button>

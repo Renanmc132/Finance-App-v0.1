@@ -96,13 +96,34 @@ export type CreditCardCharge = {
   date: string;
   categoryId: string;
   type: ExpenseType;
-  installments?: number;
-  currentInstallment?: number;
+  installments: number;
+  paidInstallments: number;
   invoiceStatus: "open" | "paid";
-  invoicePaidAt?: string;
+  lastPaidAt?: string;
+};
+
+export type CreditCardPayment = {
+  id: string;
+  chargeId: string;
+  cardId: string;
+  categoryId: string;
+  description: string;
+  amount: number;
+  paidAt: string;
+  installmentNumber: number;
+};
+
+export type SavingsMovement = {
+  id: string;
+  bucketId: string;
+  accountId: string;
+  amount: number;
+  date: string;
+  type: "deposit" | "withdrawal";
 };
 
 export type FinancePreferences = {
+  incomeTypeLabels: Record<IncomeType, string>;
   expenseTypeLabels: Record<ExpenseType, string>;
   expenseStatusLabels: Record<ExpenseStatus, string>;
   paymentMethodLabels: Record<PaymentMethod, string>;
@@ -117,7 +138,9 @@ export type FinanceData = {
   goals: Goal[];
   goalContributions: GoalContribution[];
   savingsBuckets: SavingsBucket[];
+  savingsMovements: SavingsMovement[];
   creditCards: CreditCard[];
   creditCardCharges: CreditCardCharge[];
+  creditCardPayments: CreditCardPayment[];
   preferences: FinancePreferences;
 };
