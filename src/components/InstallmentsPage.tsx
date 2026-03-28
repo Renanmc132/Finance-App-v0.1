@@ -22,7 +22,7 @@ export default function InstallmentsPage({ finance }: { finance: FinanceStore })
     finance.categories.find((category) => category.id === categoryId)?.name ?? "Sem categoria";
 
   return (
-    <div className="grid gap-6 2xl:grid-cols-[1.05fr_1.2fr]">
+    <div className="grid gap-6 xl:grid-cols-2">
       <Panel eyebrow="Nova compra parcelada" title="Controle cada parcela sem perder o fio">
         <div className="grid gap-3">
           <p className="text-sm leading-6 text-slate-600">

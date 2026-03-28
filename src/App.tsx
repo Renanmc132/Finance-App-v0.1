@@ -188,10 +188,8 @@ export default function App() {
               <CreditCardsPanel finance={finance} />
             </div>
 
-            <div className="grid gap-8 xl:grid-cols-[1.22fr_0.98fr] 2xl:grid-cols-[1.3fr_1fr]">
-              <InstallmentsPage finance={finance} />
-              <AccountsPage finance={finance} />
-            </div>
+            <InstallmentsPage finance={finance} />
+            <AccountsPage finance={finance} />
 
             <AnnualOverview finance={finance} selectedYear={selectedYear} />
             <SettingsPanel finance={finance} />
