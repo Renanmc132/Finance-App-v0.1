@@ -2,24 +2,22 @@ import { useState } from "preact/hooks";
 import { FinanceStore } from "../hooks/useFinance";
 import { EmptyState, Panel, SelectInput, TextInput, formatCurrency, formatDate, today } from "./financeUi";
 
-const bucketLabels = {
-  investment: "Investimento",
-  reserve: "Reserva",
-  other: "Outro"
-} as const;
-
 export default function SavingsPanel({ finance }: { finance: FinanceStore }) {
   const [form, setForm] = useState({
     name: "",
-    type: "investment" as const,
+    type: "investment",
     accountId: "",
-    createdAt: today
+    createdAt: today,
+    hasExistingAmount: false,
+    existingAmount: ""
   });
   const [movementForm, setMovementForm] = useState<
     Record<string, { amount: string; accountId: string; date: string }>
   >({});
   const [editingBucketId, setEditingBucketId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState("");
+  const savingsTypeLabels = finance.preferences.savingsTypeLabels;
+  const savingsTypeEntries = Object.entries(savingsTypeLabels);
 
   const totalSaved = finance.savingsBuckets.reduce((sum, bucket) => sum + bucket.amount, 0);
 
@@ -43,14 +41,41 @@ export default function SavingsPanel({ finance }: { finance: FinanceStore }) {
             placeholder="Ex.: Reserva, Harry Styles, Tesouro"
             onInput={(name) => setForm((prev) => ({ ...prev, name }))}
           />
+          <label className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
+            <input
+              type="checkbox"
+              checked={form.hasExistingAmount}
+              onChange={(event: Event) =>
+                setForm((prev) => ({
+                  ...prev,
+                  hasExistingAmount: (event.currentTarget as HTMLInputElement).checked,
+                  existingAmount: (event.currentTarget as HTMLInputElement).checked
+                    ? prev.existingAmount
+                    : ""
+                }))
+              }
+              className="h-4 w-4 rounded border-slate-300"
+            />
+            <span>Voce ja tem dinheiro investido aqui?</span>
+          </label>
+          {form.hasExistingAmount ? (
+            <TextInput
+              value={form.existingAmount}
+              placeholder="Quanto ja esta investido"
+              type="number"
+              onInput={(existingAmount) => setForm((prev) => ({ ...prev, existingAmount }))}
+            />
+          ) : null}
           <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
             <SelectInput
               value={form.type}
-              onChange={(type) => setForm((prev) => ({ ...prev, type: type as typeof prev.type }))}
+              onChange={(type) => setForm((prev) => ({ ...prev, type }))}
             >
-              <option value="investment">Investimento</option>
-              <option value="reserve">Reserva</option>
-              <option value="other">Outro</option>
+              {savingsTypeEntries.map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
             </SelectInput>
           </div>
           <TextInput
@@ -74,17 +99,27 @@ export default function SavingsPanel({ finance }: { finance: FinanceStore }) {
             onClick={() => {
               finance.addSavingsBucket({
                 name: form.name,
-                amount: 0,
+                amount: form.hasExistingAmount ? Number(form.existingAmount || 0) : 0,
                 type: form.type,
                 accountId: form.accountId || undefined,
                 createdAt: form.createdAt
               });
-              setForm({ name: "", type: "investment", accountId: "", createdAt: today });
+              setForm({
+                name: "",
+                type: "investment",
+                accountId: "",
+                createdAt: today,
+                hasExistingAmount: false,
+                existingAmount: ""
+              });
             }}
             className="rounded-2xl bg-emerald-400 px-5 py-3 font-medium text-slate-950 transition hover:bg-emerald-300"
           >
             Adicionar guardado
           </button>
+          <p className="text-xs text-slate-400">
+            Se marcar que o valor ja estava investido, ele entra no investimento sem descontar do saldo da conta.
+          </p>
         </div>
 
         {finance.savingsBuckets.length === 0 ? (
@@ -135,7 +170,7 @@ export default function SavingsPanel({ finance }: { finance: FinanceStore }) {
                       </div>
                     )}
                     <p className="text-sm text-slate-500">
-                      {bucketLabels[bucket.type]}
+                      {savingsTypeLabels[bucket.type] ?? bucket.type}
                       {bucket.accountId
                         ? ` - ${finance.accounts.find((account) => account.id === bucket.accountId)?.name ?? "Banco"}`
                         : ""}

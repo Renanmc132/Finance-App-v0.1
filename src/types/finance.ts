@@ -74,7 +74,7 @@ export type SavingsBucket = {
   id: string;
   name: string;
   amount: number;
-  type: "investment" | "reserve" | "other";
+  type: string;
   accountId?: string;
   createdAt: string;
 };
@@ -127,6 +127,7 @@ export type FinancePreferences = {
   expenseTypeLabels: Record<ExpenseType, string>;
   expenseStatusLabels: Record<ExpenseStatus, string>;
   paymentMethodLabels: Record<PaymentMethod, string>;
+  savingsTypeLabels: Record<string, string>;
 };
 
 export type FinanceData = {

@@ -56,6 +56,11 @@ const defaultPreferences = {
     cash: "Dinheiro",
     transfer: "Transferencia",
     other: "Outro"
+  },
+  savingsTypeLabels: {
+    investment: "Investimento",
+    reserve: "Reserva",
+    other: "Outro"
   }
 };
 
@@ -246,6 +251,10 @@ function parseStoredFinance(data: string): FinanceData {
         paymentMethodLabels: {
           ...defaultPreferences.paymentMethodLabels,
           ...parsed.preferences?.paymentMethodLabels
+        },
+        savingsTypeLabels: {
+          ...defaultPreferences.savingsTypeLabels,
+          ...parsed.preferences?.savingsTypeLabels
         }
       }
     };
@@ -960,7 +969,12 @@ export function useFinance(session?: Session | null) {
   }
 
   function updatePreferenceLabel(
-    group: "incomeTypeLabels" | "expenseTypeLabels" | "expenseStatusLabels" | "paymentMethodLabels",
+    group:
+      | "incomeTypeLabels"
+      | "expenseTypeLabels"
+      | "expenseStatusLabels"
+      | "paymentMethodLabels"
+      | "savingsTypeLabels",
     key: string,
     value: string
   ) {
@@ -974,6 +988,61 @@ export function useFinance(session?: Session | null) {
         }
       }
     }));
+  }
+
+  function addSavingsType(label: string) {
+    const normalizedLabel = label.trim();
+    if (!normalizedLabel) return;
+
+    const key = normalizedLabel
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "");
+
+    if (!key) return;
+
+    setFinance((prev) => {
+      if (prev.preferences.savingsTypeLabels[key]) {
+        return prev;
+      }
+
+      return {
+        ...prev,
+        preferences: {
+          ...prev.preferences,
+          savingsTypeLabels: {
+            ...prev.preferences.savingsTypeLabels,
+            [key]: normalizedLabel
+          }
+        }
+      };
+    });
+  }
+
+  function removeSavingsType(key: string) {
+    if (key === "other") return;
+
+    setFinance((prev) => {
+      if (!prev.preferences.savingsTypeLabels[key]) {
+        return prev;
+      }
+
+      const nextSavingsTypeLabels = { ...prev.preferences.savingsTypeLabels };
+      delete nextSavingsTypeLabels[key];
+
+      return {
+        ...prev,
+        savingsBuckets: prev.savingsBuckets.map((bucket) =>
+          bucket.type === key ? { ...bucket, type: "other" } : bucket
+        ),
+        preferences: {
+          ...prev.preferences,
+          savingsTypeLabels: nextSavingsTypeLabels
+        }
+      };
+    });
   }
 
   return {
@@ -1008,7 +1077,9 @@ export function useFinance(session?: Session | null) {
     removeCreditCardCharge,
     exportData,
     importData,
-    updatePreferenceLabel
+    updatePreferenceLabel,
+    addSavingsType,
+    removeSavingsType
   };
 }
 
