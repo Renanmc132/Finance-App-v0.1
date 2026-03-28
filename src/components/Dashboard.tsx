@@ -73,22 +73,26 @@ function HighlightCards({ finance, selectedMonth, selectedYear }: DashboardProps
       label: "Saldo em conta corrente",
       value: formatCurrency(totalBalance),
       tone: "border-emerald-100 bg-emerald-50",
-      details: finance.accounts
+      details: finance.accounts,
+      caption: "Saldo somado de todos os bancos"
     },
     {
       label: "Resultado do mes",
       value: formatCurrency(incomeThisMonth - expenseThisMonth),
-      tone: "border-sky-100 bg-sky-50"
+      tone: "border-sky-100 bg-sky-50",
+      caption: "Entradas do mes menos gastos pagos"
     },
     {
       label: "Entradas do mes",
       value: formatCurrency(incomeThisMonth),
-      tone: "border-cyan-100 bg-cyan-50"
+      tone: "border-cyan-100 bg-cyan-50",
+      caption: "Tudo o que entrou no periodo"
     },
     {
       label: "Pendencias",
       value: formatCurrency(pendingAmount + pendingCreditAmount),
-      tone: "border-amber-100 bg-amber-50"
+      tone: "border-amber-100 bg-amber-50",
+      caption: "Gastos e faturas ainda em aberto"
     }
   ];
 
@@ -100,7 +104,7 @@ function HighlightCards({ finance, selectedMonth, selectedYear }: DashboardProps
             <summary className="cursor-pointer list-none">
               <p className="text-sm text-slate-500">{card.label}</p>
               <p className="mt-1 text-xs uppercase tracking-[0.2em] text-slate-400">
-                Clique para ver por banco
+                {card.caption}
               </p>
               <p className="mt-2 text-3xl font-semibold text-slate-900">{card.value}</p>
             </summary>
@@ -126,6 +130,9 @@ function HighlightCards({ finance, selectedMonth, selectedYear }: DashboardProps
           <div key={card.label} className={`rounded-3xl border p-5 ${card.tone}`}>
             <p className="text-sm text-slate-500">{card.label}</p>
             <p className="mt-1 text-xs uppercase tracking-[0.2em] text-slate-400">
+              {card.caption}
+            </p>
+            <p className="mt-1 text-xs text-slate-400">
               {monthLabels[selectedMonth]} {selectedYear}
             </p>
             <p className="mt-2 text-3xl font-semibold text-slate-900">{card.value}</p>

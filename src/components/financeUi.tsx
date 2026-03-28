@@ -52,11 +52,13 @@ export function TextInput({
   value,
   placeholder,
   type = "text",
+  maxLength,
   onInput
 }: {
   value: string;
   placeholder: string;
   type?: string;
+  maxLength?: number;
   onInput: (value: string) => void;
 }) {
   return (
@@ -64,6 +66,7 @@ export function TextInput({
       value={value}
       placeholder={placeholder}
       type={type}
+      maxLength={maxLength}
       onInput={(event: Event) => onInput((event.currentTarget as HTMLInputElement).value)}
       className="min-h-[52px] min-w-0 w-full rounded-2xl border border-slate-200 bg-slate-50/80 px-4 py-3 text-slate-900 shadow-sm outline-none transition focus:border-slate-400 focus:bg-white"
     />

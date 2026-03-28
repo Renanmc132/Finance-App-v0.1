@@ -21,6 +21,7 @@ import {
 import { supabase } from "../lib/supabase";
 
 const STORAGE_KEY = "finance-app-v2";
+const MAX_SHORT_LABEL_LENGTH = 32;
 
 const defaultCategories: Category[] = [
   { id: uuidv4(), name: "Moradia", color: "#f97316" },
@@ -147,6 +148,10 @@ function normalizeAccountType(type?: string): Account["type"] {
   if (type === "wallet") return "wallet";
   if (type === "card" || type === "credit") return "card";
   return "account";
+}
+
+function normalizeShortLabel(value: string) {
+  return value.trim().slice(0, MAX_SHORT_LABEL_LENGTH).trim();
 }
 
 function parseStoredFinance(data: string): FinanceData {
@@ -289,7 +294,8 @@ export function useFinance(session?: Session | null) {
   }, [finance, ready, session?.user?.id]);
 
   function addAccount({ name, type, initialBalance = 0 }: AddAccountInput) {
-    if (!name.trim()) return;
+    const normalizedName = normalizeShortLabel(name);
+    if (!normalizedName) return;
 
     setFinance((prev) => ({
       ...prev,
@@ -297,7 +303,7 @@ export function useFinance(session?: Session | null) {
         ...prev.accounts,
         {
           id: uuidv4(),
-          name: name.trim(),
+          name: normalizedName,
           type,
           balance: initialBalance
         }
@@ -324,13 +330,14 @@ export function useFinance(session?: Session | null) {
   }
 
   function addCategory(name: string, color: string) {
-    if (!name.trim()) return;
+    const normalizedName = normalizeShortLabel(name);
+    if (!normalizedName) return;
 
     setFinance((prev) => ({
       ...prev,
       categories: [
         ...prev.categories,
-        { id: uuidv4(), name: name.trim(), color }
+        { id: uuidv4(), name: normalizedName, color }
       ]
     }));
   }
@@ -463,8 +470,9 @@ export function useFinance(session?: Session | null) {
   }
 
   function addInstallmentPlan(input: AddInstallmentPlanInput) {
+    const normalizedTitle = normalizeShortLabel(input.title);
     if (
-      !input.title.trim() ||
+      !normalizedTitle ||
       !input.accountId ||
       !input.categoryId ||
       !input.totalInstallments ||
@@ -475,7 +483,7 @@ export function useFinance(session?: Session | null) {
 
     const plan: InstallmentPlan = {
       id: uuidv4(),
-      title: input.title.trim(),
+      title: normalizedTitle,
       totalInstallments: input.totalInstallments,
       paidInstallments: 0,
       installmentAmount: input.installmentAmount,

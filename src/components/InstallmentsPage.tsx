@@ -22,7 +22,7 @@ export default function InstallmentsPage({ finance }: { finance: FinanceStore })
     finance.categories.find((category) => category.id === categoryId)?.name ?? "Sem categoria";
 
   return (
-    <div className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
+    <div className="grid gap-6 2xl:grid-cols-[1.05fr_1.2fr]">
       <Panel eyebrow="Nova compra parcelada" title="Controle cada parcela sem perder o fio">
         <div className="grid gap-3">
           <p className="text-sm leading-6 text-slate-600">
@@ -32,12 +32,13 @@ export default function InstallmentsPage({ finance }: { finance: FinanceStore })
           <TextInput
             value={form.title}
             placeholder="Nome da compra parcelada. Ex.: Celular, curso, sofa"
+            maxLength={32}
             onInput={(title) => setForm((prev) => ({ ...prev, title }))}
           />
-          <div className="grid gap-3 md:grid-cols-2">
+          <div className="grid gap-3 lg:grid-cols-2">
             <TextInput
               value={form.totalInstallments}
-              placeholder="Quantas parcelas existem no total"
+              placeholder="Quantas parcelas"
               type="number"
               onInput={(totalInstallments) => setForm((prev) => ({ ...prev, totalInstallments }))}
             />
@@ -48,16 +49,16 @@ export default function InstallmentsPage({ finance }: { finance: FinanceStore })
               onInput={(installmentAmount) => setForm((prev) => ({ ...prev, installmentAmount }))}
             />
           </div>
-          <div className="grid gap-3 md:grid-cols-3">
+          <div className="grid gap-3 lg:grid-cols-3">
             <TextInput
               value={form.dueDay}
-              placeholder="Dia em que costuma vencer"
+              placeholder="Dia do vencimento"
               type="number"
               onInput={(dueDay) => setForm((prev) => ({ ...prev, dueDay }))}
             />
             <TextInput
               value={form.startDate}
-              placeholder="Data da primeira parcela"
+              placeholder="Primeira parcela"
               type="date"
               onInput={(startDate) => setForm((prev) => ({ ...prev, startDate }))}
             />
@@ -120,6 +121,7 @@ export default function InstallmentsPage({ finance }: { finance: FinanceStore })
           >
             Criar plano parcelado
           </button>
+          <p className="text-xs text-slate-400">Maximo de 32 caracteres no nome do plano.</p>
         </div>
       </Panel>
 
@@ -138,23 +140,23 @@ export default function InstallmentsPage({ finance }: { finance: FinanceStore })
                   key={plan.id}
                   className="rounded-2xl border border-slate-200 bg-slate-50 p-4"
                 >
-                  <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                  <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_auto] xl:items-start">
                     <div className="min-w-0 flex-1">
-                      <p className="font-medium text-slate-900 [overflow-wrap:anywhere]">
+                      <p className="max-w-[32ch] text-lg font-medium leading-7 text-slate-900 [overflow-wrap:anywhere]">
                         {plan.title}
                       </p>
-                      <p className="text-sm text-slate-500">
+                      <p className="mt-1 text-sm leading-6 text-slate-500">
                         {categoryName(plan.categoryId)} - {accountName(plan.accountId)} - vence dia {plan.dueDay}
                       </p>
                     </div>
-                    <div className="sm:text-right">
-                      <p className="font-medium text-slate-900">
+                    <div className="xl:text-right">
+                      <p className="text-lg font-medium text-slate-900">
                         {nextInstallment}/{plan.totalInstallments}
                       </p>
-                      <p className="text-sm text-slate-500">
+                      <p className="text-sm leading-6 text-slate-500">
                         {formatCurrency(plan.installmentAmount)} por parcela
                       </p>
-                      <p className="text-sm text-slate-500">
+                      <p className="text-sm leading-6 text-slate-500">
                         Via {paymentMethodLabels[plan.paymentMethod]}
                       </p>
                     </div>
@@ -162,8 +164,8 @@ export default function InstallmentsPage({ finance }: { finance: FinanceStore })
                   <div className="mt-4 h-2 rounded-full bg-slate-200">
                     <div className="h-2 rounded-full bg-amber-300" style={{ width: `${progress}%` }} />
                   </div>
-                  <div className="mt-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-                    <p className="text-sm text-slate-500">
+                  <div className="mt-4 grid gap-3 xl:grid-cols-[minmax(0,1fr)_auto] xl:items-center">
+                    <p className="text-sm leading-6 text-slate-500">
                       {finished
                         ? "Todas as parcelas foram pagas."
                         : `${plan.totalInstallments - plan.paidInstallments} parcela(s) restantes.`}
